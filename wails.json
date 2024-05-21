@@ -1,0 +1,14 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "version": "1.0.0",
+  "name": "PTT Live",
+  "outputfilename": "PTT Live",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Shun",
+    "email": "a7932677@gmail.com"
+  }
+}

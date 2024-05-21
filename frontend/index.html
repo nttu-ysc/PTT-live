@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>PTT Live</title>
+</head>
+<body>
+<div id="loading-container">
+    <img src="src/assets/images/loading.gif" alt="Loading" class="loading">
+</div>
+<login-page></login-page>
+<board-page style="display: none;"></board-page>
+<post-list-page style="display: none;">
+<!--    <div class="toolbar">-->
+<!--        <button class="backButton btn list-back">Back</button>-->
+<!--    </div>-->
+    <div id="post-list"></div>
+</post-list-page>
+<post-detail-page style="display: none;">
+<!--    <div class="toolbar">-->
+<!--        <button class="backButton btn detail-back">Back</button>-->
+<!--    </div>-->
+    <div id="chat-container">
+        <div id="chat-loading"></div>
+        <div id="chat-messages"></div>
+        <div class="input-container">
+            <input id="chat-input" type="text" placeholder="Type a message...">
+            <button id="send-chat-btn" class="btn">Send</button>
+        </div>
+        <div class="mode-selector" id="modeSelector">
+            <button data-mode="1">推</button>
+            <button data-mode="2">噓</button>
+            <button data-mode="3">-></button>
+        </div>
+    </div>
+</post-detail-page>
+<main-page style="display: none;"></main-page>
+<script src="./src/main.js" type="module"></script>
+</body>
+</html>
