@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "PTT Live",
   "outputfilename": "PTT Live",
   "frontend:install": "npm install",
@@ -10,5 +10,8 @@
   "author": {
     "name": "Shun",
     "email": "a7932677@gmail.com"
+  },
+  "info": {
+    "productVersion": "1.0.1"
   }
 }

@@ -173,10 +173,7 @@ func (w *customOut) Read(t time.Duration) ([]byte, error) {
 }
 
 func (w *customOut) Write(p []byte) (n int, err error) {
-	file, _ := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	log.SetOutput(file)
 	newP := cleanData(p)
-	log.Println(string(newP))
 	w.reader <- newP
 	return os.Stdout.Write(p)
 }
