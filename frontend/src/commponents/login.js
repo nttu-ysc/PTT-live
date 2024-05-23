@@ -41,6 +41,7 @@ class LoginPage extends HTMLElement {
                     errorMessageDiv.textContent = '';
                     this.style.display = 'none';
                     document.querySelector('board-page').style.display = 'block';
+                    document.querySelector('#boardName').focus();
                 })
                 .catch((err) => {
                     console.error(err);

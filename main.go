@@ -30,7 +30,7 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 64},
+		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 80},
 		OnStartup: func(ctx context.Context) {
 			app.startup(ctx)
 			pttClient.StartUp(ctx)
@@ -41,22 +41,22 @@ func main() {
 			pttClient,
 		},
 
-		Frameless: true,
+		Frameless: false,
 		Mac: &mac.Options{
 			TitleBar: &mac.TitleBar{
-				TitlebarAppearsTransparent: false,
+				TitlebarAppearsTransparent: true,
 				HideTitle:                  true,
 				HideTitleBar:               false,
 				FullSizeContent:            false,
-				UseToolbar:                 true,
-				HideToolbarSeparator:       true,
+				UseToolbar:                 false,
+				HideToolbarSeparator:       false,
 			},
 			WebviewIsTransparent: true,
-			//WindowIsTranslucent:  true,
+			WindowIsTranslucent:  false,
 		},
 		Windows: &windows.Options{
 			WebviewIsTransparent:              true,
-			WindowIsTranslucent:               true,
+			WindowIsTranslucent:               false,
 			DisableWindowIcon:                 false,
 			DisableFramelessWindowDecorations: false,
 			WebviewUserDataPath:               "",

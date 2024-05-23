@@ -105,6 +105,7 @@ function displayMessages(messages) {
 
 function displayMessage(author, message) {
     const chatMessages = document.getElementById('chat-messages');
+    const fragment = document.createDocumentFragment();
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message';
     const authorDiv = document.createElement('div');
@@ -116,9 +117,17 @@ function displayMessage(author, message) {
     contentDiv.textContent = message;
     messageDiv.appendChild(authorDiv);
     messageDiv.appendChild(contentDiv);
-    chatMessages.appendChild(messageDiv);
+    fragment.appendChild(messageDiv);
+    // chatMessages.appendChild(messageDiv);
+    chatMessages.appendChild(fragment);
     // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    requestAnimationFrame(() => {
+        chatMessages.style.display = 'none';
+        chatMessages.offsetHeight; // Trigger reflow
+        chatMessages.style.display = 'block';
+    });
 }
 
 function getRandomColor() {
