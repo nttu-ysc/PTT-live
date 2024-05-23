@@ -13,6 +13,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"ptt-live/pttcrawler"
+	"ptt-live/ptterror"
 	"regexp"
 	"sync"
 	"syscall"
@@ -221,14 +223,14 @@ func (c *PTTClient) Login(account, password string) error {
 		select {
 		case <-timer.C:
 			c.Connect()
-			return Timeout
+			return ptterror.Timeout
 		default:
 			screen, _ := c.read(5 * time.Second)
 			if bytes.Contains(screen, []byte("系統過載, 請稍後再來")) {
-				return PTTOverloadError
+				return ptterror.PTTOverloadError
 			}
 			if bytes.Contains(screen, []byte("密碼不對或無此帳號")) {
-				return AuthError
+				return ptterror.AuthError
 			}
 			if bytes.Contains(screen, []byte("請仔細回憶您的密碼")) {
 				runtime.MessageDialog(c.Ctx, runtime.MessageDialogOptions{
@@ -244,7 +246,7 @@ func (c *PTTClient) Login(account, password string) error {
 					Icon:          nil,
 				})
 				c.Connect()
-				return AuthErrorMax
+				return ptterror.AuthErrorMax
 			}
 			if bytes.Contains(screen, []byte("您想刪除其他重複登入的連線嗎？[Y/n]")) {
 				c.write([]byte("y\r"))
@@ -255,7 +257,7 @@ func (c *PTTClient) Login(account, password string) error {
 				timer = time.NewTimer(5 * time.Second)
 			}
 			if bytes.Contains(screen, []byte("您有一篇文章尚未完成")) {
-				return NotFinishArticleError
+				return ptterror.NotFinishArticleError
 			}
 			if bytes.Contains(screen, []byte("按任意鍵繼續")) {
 				c.write([]byte(" "))
@@ -276,15 +278,15 @@ func (c *PTTClient) Login(account, password string) error {
 	}
 }
 
-type Post struct {
-	SearchId string `json:"search_id"`
-	Author   string `json:"author"`
-	Title    string `json:"title"`
-}
+//type Post struct {
+//	SearchId string `json:"search_id"`
+//	Author   string `json:"author"`
+//	Title    string `json:"title"`
+//}
 
 var postReg = regexp.MustCompile(`(?i)\s*(\d+)\s+([~+]?爆\d*|\d+)\s*(\d{1,2}/\d{1,2})?\s+(\S+)\s+(\S+)\s+\[live\]\s+(.*)`)
 
-func (c *PTTClient) GotoBoard(board string) (*[]Post, error) {
+func (c *PTTClient) GotoBoard(board string) (*[]pttcrawler.Post, error) {
 	c.Lock()
 	defer c.Unlock()
 	c.write([]byte("s"))
@@ -297,7 +299,7 @@ func (c *PTTClient) GotoBoard(board string) (*[]Post, error) {
 	for {
 		select {
 		case <-timer.C:
-			return nil, BoardNameError
+			return nil, ptterror.BoardNameError
 		default:
 			screen, _ := c.read(5 * time.Second)
 			if bytes.Contains(screen, []byte("按任意鍵繼續")) || bytes.Contains(screen, []byte("動畫播放中...")) {
@@ -305,31 +307,33 @@ func (c *PTTClient) GotoBoard(board string) (*[]Post, error) {
 				break
 			}
 			if bytes.Contains(screen, []byte("【板主:")) && bytes.Contains(screen, []byte("看板《")) {
-				return c.searchLivePost()
+				return pttcrawler.FetchLivePosts(board)
 			}
 		}
 	}
 }
 
-func (c *PTTClient) searchLivePost() (*[]Post, error) {
-	posts := new([]Post)
-	c.read(3 * time.Second)
-	c.write([]byte("/[live]\r"))
-	screen, _ := c.read(2 * time.Second)
-	screen2, _ := c.read(1 * time.Second)
-	screen = append(screen, screen2...)
-
-	matches := postReg.FindAllStringSubmatch(string(screen), -1)
-	for _, match := range matches {
-		*posts = append(*posts, Post{
-			SearchId: match[1],
-			Author:   match[4],
-			Title:    match[6],
-		})
-	}
-
-	return posts, nil
-}
+//func (c *PTTClient) searchLivePost() (*[]Post, error) {
+//	posts := new([]Post)
+//	c.read(3 * time.Second)
+//	c.write([]byte("/[live]\r"))
+//	screen, _ := c.read(2 * time.Second)
+//	screen2, _ := c.read(1 * time.Second)
+//	screen = append(screen, screen2...)
+//
+//	matches := postReg.FindAllStringSubmatch(string(screen), -1)
+//	for _, match := range matches {
+//		*posts = append(*posts, Post{
+//			SearchId: match[1],
+//			Author:   match[4],
+//			Title:    match[6],
+//		})
+//	}
+//
+//	pttcrawler.FetchLivePosts()
+//
+//	return posts, nil
+//}
 
 var msgReg = regexp.MustCompile(`(推|噓|→)?\s+(\S+)\s*:\s+(.*)\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
 
@@ -340,12 +344,10 @@ type Message struct {
 	Hash    string    `json:"hash"`
 }
 
-func (c *PTTClient) FetchPostMessages(postId string, msgHash string) (*[]Message, error) {
+func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, error) {
 	c.Lock()
 	defer c.Unlock()
-	c.write([]byte("llq"))
-	c.read(3 * time.Second)
-	c.write([]byte(fmt.Sprintf("%s\r\r", postId)))
+	c.write([]byte(fmt.Sprintf("#%s\r\r", aid)))
 	screen, _ := c.read(3 * time.Second)
 
 	if !bytes.Contains(screen, []byte("100%")) {

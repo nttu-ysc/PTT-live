@@ -1,4 +1,4 @@
-package pttclient
+package ptterror
 
 type PTTError string
 

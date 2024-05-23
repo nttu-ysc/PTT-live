@@ -32,9 +32,9 @@ class BoardPage extends HTMLElement {
                 errorMessageDiv.textContent = '';
                 this.style.display = 'none';
                 document.querySelector('post-list-page').style.display = 'block';
-                posts.sort(function(a,b) {
-                    return b.search_id - a.search_id
-                });
+                // posts.sort(function(a,b) {
+                //     return b.search_id - a.search_id
+                // });
                 displayPosts(posts);
             } catch (error) {
                 errorMessageDiv.textContent = error;

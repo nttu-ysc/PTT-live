@@ -9,10 +9,12 @@ export function displayPosts(posts) {
         const postDiv = document.createElement('div');
         postDiv.className = 'post';
 
+        const color = post.push_count === '爆' ? '#f66' : '#ff6';
+
         postDiv.innerHTML = `
-            <h3>${post.title}</h3>
-            <p>Author: ${post.author??'-'}</p>
-            <p>Date: ${post.date??'-'}</p>
+            <h3><span style="color: ${color}">${post.push_count}</span> ${post.title}</h3>
+            <p>Author: ${post.author ?? '-'}</p>
+            <p>Date: ${post.date ?? '-'}</p>
         `;
 
         postDiv.addEventListener('click', () => {
@@ -20,7 +22,7 @@ export function displayPosts(posts) {
             loadingContainer.style.display = 'flex';
             document.querySelector('post-list-page').style.display = 'none';
             document.querySelector('post-detail-page').style.display = 'block';
-            fetchPostDetail(post.search_id);
+            fetchPostDetail(post.aid);
             loadingContainer.style.display = 'none';
         });
 
