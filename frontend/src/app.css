@@ -126,7 +126,7 @@
     overflow: hidden;
     height: calc(100vh - 2px);
     display: flex;
-    overflow-y: auto;
+    /*overflow-y: auto;*/
     flex-direction: column;
     border: 1px solid #ccc;
     border-radius: 10px;
@@ -156,8 +156,7 @@
 
 
 #chat-messages {
-    flex: 10;
-    height: 85vh;
+    flex: 9.5;
     overflow-y: scroll;
     /*border: 1px solid #ccc;*/
     margin: 10px;
