@@ -30,11 +30,13 @@ type PTTClient struct {
 	sessionIn  io.WriteCloser
 	sessionOut *customOut
 	lock       sync.Locker
+	reconnect  chan struct{}
 }
 
 func NewPttClient() *PTTClient {
 	return &PTTClient{
-		lock: &sync.Mutex{},
+		lock:      &sync.Mutex{},
+		reconnect: make(chan struct{}, 1),
 	}
 }
 
@@ -119,20 +121,32 @@ func (c *PTTClient) Connect() {
 		log.Fatalf("failed to start shell: %s", err)
 	}
 
-	go func() {
+	go func(c *PTTClient) {
 		c.session.Wait()
-		c.Close()
-		runtime.MessageDialog(c.Ctx, runtime.MessageDialogOptions{
-			Type:          runtime.ErrorDialog,
-			Title:         "PTT live",
-			Message:       "偵測到重複登入，即將關閉程式",
-			Buttons:       nil,
-			DefaultButton: "",
-			CancelButton:  "",
-			Icon:          nil,
-		})
-		os.Exit(1)
-	}()
+		to := time.NewTicker(time.Second)
+		select {
+		case <-to.C:
+			runtime.MessageDialog(c.Ctx, runtime.MessageDialogOptions{
+				Type:          runtime.ErrorDialog,
+				Title:         "PTT live",
+				Message:       "偵測到重複登入，即將關閉程式",
+				Buttons:       nil,
+				DefaultButton: "",
+				CancelButton:  "",
+				Icon:          nil,
+			})
+			os.Exit(1)
+		case <-c.reconnect:
+			c = NewPttClient()
+			return
+		}
+	}(c)
+}
+
+func (c *PTTClient) Reconnect() {
+	c.reconnect <- struct{}{}
+	//c.Close()
+	c.Connect()
 }
 
 func (c *PTTClient) write(p []byte) (int, error) {
@@ -222,7 +236,7 @@ func (c *PTTClient) Login(account, password string) error {
 	for {
 		select {
 		case <-timer.C:
-			c.Connect()
+			c.Reconnect()
 			return ptterror.Timeout
 		default:
 			screen, _ := c.read(5 * time.Second)
@@ -233,6 +247,7 @@ func (c *PTTClient) Login(account, password string) error {
 				return ptterror.AuthError
 			}
 			if bytes.Contains(screen, []byte("請仔細回憶您的密碼")) {
+				c.Reconnect()
 				runtime.MessageDialog(c.Ctx, runtime.MessageDialogOptions{
 					Type:  runtime.ErrorDialog,
 					Title: "失敗次數超過上限",
@@ -245,7 +260,6 @@ func (c *PTTClient) Login(account, password string) error {
 					CancelButton:  "",
 					Icon:          nil,
 				})
-				c.Connect()
 				return ptterror.AuthErrorMax
 			}
 			if bytes.Contains(screen, []byte("您想刪除其他重複登入的連線嗎？[Y/n]")) {

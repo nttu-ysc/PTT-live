@@ -6,7 +6,7 @@ import (
 	"ptt-live/utils"
 )
 
-const PTT_URL = "https://www.ptt.cc/bbs/"
+const PttUrl = "https://www.ptt.cc/bbs/"
 
 type Post struct {
 	Url       string `json:"url"`
@@ -18,7 +18,7 @@ type Post struct {
 }
 
 func FetchLivePosts(board string) (posts *[]Post, err error) {
-	url := PTT_URL + board + "/search?q=%5Blive%5D"
+	url := PttUrl + board + "/search?q=%5Blive"
 	posts = new([]Post)
 
 	c := colly.NewCollector()

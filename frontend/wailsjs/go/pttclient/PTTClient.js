@@ -26,6 +26,10 @@ export function Login(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['Login'](arg1, arg2);
 }
 
+export function Reconnect() {
+  return window['go']['pttclient']['PTTClient']['Reconnect']();
+}
+
 export function SendMessage(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['SendMessage'](arg1, arg2);
 }
