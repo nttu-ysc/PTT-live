@@ -12,21 +12,27 @@
 <login-page></login-page>
 <board-page style="display: none;"></board-page>
 <post-list-page style="display: none;">
-<!--    <div class="toolbar">-->
-<!--        <button class="backButton btn list-back">Back</button>-->
-<!--    </div>-->
+    <!--    <div class="toolbar">-->
+    <!--        <button class="backButton btn list-back">Back</button>-->
+    <!--    </div>-->
     <div id="post-list"></div>
 </post-list-page>
 <post-detail-page style="display: none;">
-<!--    <div class="toolbar">-->
-<!--        <button class="backButton btn detail-back">Back</button>-->
-<!--    </div>-->
-    <div id="chat-container">
-        <div id="chat-loading"></div>
-        <div id="chat-messages"></div>
-        <div class="input-container">
-            <input id="chat-input" type="text" placeholder="Type a message...">
-            <button id="send-chat-btn" class="btn">Send</button>
+    <!--    <div class="toolbar">-->
+    <!--        <button class="backButton btn detail-back">Back</button>-->
+    <!--    </div>-->
+    <div id="msg-container">
+        <div id="chat-container">
+            <div id="chat-loading"></div>
+            <div id="chat-messages">
+            </div>
+            <div id="newMessageAlert" onclick="scrollToBottom()"></div>
+        </div>
+        <div>
+            <form id="chat-form" class="input-container">
+                <input id="chat-input" type="text" placeholder="Type a message...">
+                <button id="send-chat-btn" class="btn" type="submit">Send</button>
+            </form>
         </div>
         <div class="mode-selector" id="modeSelector">
             <button data-mode="1">推</button>
@@ -37,5 +43,14 @@
 </post-detail-page>
 <main-page style="display: none;"></main-page>
 <script src="./src/main.js" type="module"></script>
+<script>
+    function scrollToBottom() {
+        const chatMessages = document.getElementById('chat-messages');
+        const newMessageAlert = document.getElementById('newMessageAlert');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        newMessageAlert.style.display = 'none';
+    }
+</script>
 </body>
 </html>
+

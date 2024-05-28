@@ -10,6 +10,5 @@ import {WindowFullscreen} from "../wailsjs/runtime";
 // document.oncontextmenu = new Function('event.returnValue=false');
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Wails ready!');
-    // WindowFullscreen()
 });
 

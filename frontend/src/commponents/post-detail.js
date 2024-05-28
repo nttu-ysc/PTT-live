@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.textContent = `${pushModes[currentMode]}`;
     }
 
-    sendButton.addEventListener('click', () => {
+    document.getElementById('chat-form').addEventListener('submit', (e) => {
+        e.preventDefault();
         const chatInput = document.getElementById('chat-input');
         if (modeSelector.style.display !== 'flex') {
             const message = chatInput.value.trim();
@@ -44,13 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function sendMessage() {
+    function sendMessage(messageText) {
         const messageInput = document.getElementById('chat-input');
-        const messageText = messageInput.value;
-        if (messageText.trim() !== '') {
-            console.log('Sending message:', messageText);
-            SendMessage(currentMode, messageText);
-        }
+        SendMessage(currentMode, messageText);
+        messageInput.value = '';
     }
 
     updateSendButtonText();
@@ -75,7 +73,6 @@ async function fetchMessages(postId) {
     let hash = ''
     const chatLoading = document.getElementById('chat-loading');
     try {
-
         while (true) {
             chatLoading.style.display = 'block';
             const messages = await FetchPostMessages(postId, hash)
@@ -103,8 +100,11 @@ function displayMessages(messages) {
     });
 }
 
+const chatMessages = document.getElementById('chat-messages');
+const newMessageAlert = document.getElementById('newMessageAlert');
+
 function displayMessage(author, message) {
-    const chatMessages = document.getElementById('chat-messages');
+    const isBottom = isAtBottom();
     const fragment = document.createDocumentFragment();
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message';
@@ -121,7 +121,13 @@ function displayMessage(author, message) {
     // chatMessages.appendChild(messageDiv);
     chatMessages.appendChild(fragment);
     // Scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (isBottom) {
+        // chatMessages.scrollTop = chatMessages.scrollHeight;
+        scrollToBottom();
+        console.log('is at bottom.');
+    } else {
+        newMessageAlert.style.display = 'block';
+    }
 
     requestAnimationFrame(() => {
         chatMessages.style.display = 'none';
@@ -129,6 +135,16 @@ function displayMessage(author, message) {
         chatMessages.style.display = 'block';
     });
 }
+
+function isAtBottom() {
+    return chatMessages.scrollHeight - chatMessages.scrollTop === chatMessages.clientHeight;
+}
+
+chatMessages.addEventListener('scroll', () => {
+    if (isAtBottom()) {
+        newMessageAlert.style.display = 'none';
+    }
+})
 
 function getRandomColor() {
     const letters = '0123456789ABCDEF';

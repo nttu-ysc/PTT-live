@@ -18,7 +18,7 @@ type Post struct {
 }
 
 func FetchLivePosts(board string) (posts *[]Post, err error) {
-	url := PttUrl + board + "/search?q=%5Blive"
+	url := PttUrl + board + "/search?q=live"
 	posts = new([]Post)
 
 	c := colly.NewCollector()

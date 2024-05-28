@@ -1,5 +1,5 @@
 import logo from '../assets/images/logo-universal.png';
-import live from '../assets/images/live.png';
+import ptt from '../assets/images/ptt.png';
 
 import {Login} from '../../wailsjs/go/pttclient/PttClient.js';
 
@@ -25,7 +25,7 @@ class LoginPage extends HTMLElement {
             </div>
 `;
 
-        this.querySelector('#logo').src = live;
+        this.querySelector('#logo').src = ptt;
 
         this.querySelector('#account').focus();
         this.querySelector('#login-form').addEventListener('submit', (e) => {

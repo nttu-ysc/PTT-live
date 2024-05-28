@@ -8,16 +8,13 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
-	"golang.org/x/sys/unix"
 	"io"
 	"log"
 	"os"
-	"os/signal"
 	"ptt-live/pttcrawler"
 	"ptt-live/ptterror"
 	"regexp"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -64,18 +61,18 @@ func (c *PTTClient) Connect() {
 		log.Fatalf("unable to create c.session: %s", err)
 	}
 
-	// 視窗大小改變時發送 SIGWINCH 信號
-	sigwinch := make(chan os.Signal, 1)
-	signal.Notify(sigwinch, syscall.SIGWINCH)
-	go func() {
-		for {
-			<-sigwinch
-			width, height, err := terminalSize()
-			if err == nil {
-				c.session.WindowChange(height, width)
-			}
-		}
-	}()
+	//// 視窗大小改變時發送 SIGWINCH 信號
+	//sigwinch := make(chan os.Signal, 1)
+	//signal.Notify(sigwinch, syscall.SIGWINCH)
+	//go func() {
+	//	for {
+	//		<-sigwinch
+	//		width, height, err := terminalSize()
+	//		if err == nil {
+	//			c.session.WindowChange(height, width)
+	//		}
+	//	}
+	//}()
 
 	c.sessionIn, _ = c.session.StdinPipe()
 
@@ -218,13 +215,13 @@ func cleanData(data []byte) []byte {
 	return data
 }
 
-func terminalSize() (int, int, error) {
-	ws, err := unix.IoctlGetWinsize(int(os.Stdout.Fd()), unix.TIOCGWINSZ)
-	if err != nil {
-		return 0, 0, err
-	}
-	return int(ws.Col), int(ws.Row), nil
-}
+//func terminalSize() (int, int, error) {
+//	ws, err := unix.IoctlGetWinsize(int(os.Stdout.Fd()), unix.TIOCGWINSZ)
+//	if err != nil {
+//		return 0, 0, err
+//	}
+//	return int(ws.Col), int(ws.Row), nil
+//}
 
 func (c *PTTClient) Login(account, password string) error {
 	c.Lock()
@@ -371,7 +368,10 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 			if bytes.Contains(screen, []byte("100%")) {
 				break
 			}
-			tmp, _ := c.read(3 * time.Second)
+			tmp, err := c.read(3 * time.Second)
+			if err != nil {
+				break
+			}
 			screen = append(screen, tmp...)
 		}
 	}

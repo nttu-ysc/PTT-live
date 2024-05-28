@@ -24,7 +24,7 @@ func main() {
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:      "PTT Live",
-		Width:      460,
+		Width:      430,
 		Height:     560,
 		Fullscreen: false,
 		AssetServer: &assetserver.Options{

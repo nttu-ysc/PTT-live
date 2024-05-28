@@ -1,19 +1,23 @@
-# README
+# PTT Live
 
 ## About
 
-This is the official Wails Vanilla template.
+This is a Live chatroom for PTT.
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## Install
 
-## Live Development
+[Release Page](https://github.com/nttu-ysc/PTT-live/releases)
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+## Usage 
 
-## Building
+1. Type account and password.
+![login](frontend/src/assets/images/login.png)
 
-To build a redistributable, production mode package, use `wails build`.
+2. Select board which you want to watch.
+![search-board](frontend/src/assets/images/search-board.png)
+
+3. Choose one post for living.
+![post-list](frontend/src/assets/images/post-list.png)
+
+4. Enjoy your live post.
+![post-detail](frontend/src/assets/images/post-detail.png)
