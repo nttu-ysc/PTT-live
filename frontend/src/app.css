@@ -118,7 +118,7 @@
 }
 
 
-/* ---- Opacity slider — small vertical pill, anchored below toolbar at top-right ---- */
+/* ---- Opacity slider — small horizontal pill, anchored below toolbar at top-right ---- */
 .opacity-bar {
     --wails-draggable: no-drag;
     position: fixed;
@@ -127,10 +127,11 @@
     right: 10px;
     z-index: 200;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    /* ← horizontal layout */
     align-items: center;
     gap: 4px;
-    padding: 6px 5px;
+    padding: 5px 8px;
     background: rgba(30, 30, 30, 0.6);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
@@ -138,30 +139,29 @@
     border-radius: 12px;
 }
 
-/* ☀ icon above slider */
+/* 🌑 icon on the left (low opacity = dark/transparent) */
 .opacity-bar::before {
-    content: '☀️';
-    font-size: 10px;
-    line-height: 1;
-    opacity: 0.65;
-}
-
-/* 🌑 icon below slider */
-.opacity-bar::after {
     content: '🌑';
     font-size: 10px;
     line-height: 1;
     opacity: 0.5;
 }
 
+/* ☀ icon on the right (high opacity = bright) */
+.opacity-bar::after {
+    content: '☀️';
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.65;
+}
+
 #opacity-slider {
     --wails-draggable: no-drag;
-    -webkit-appearance: slider-vertical;
-    appearance: slider-vertical;
-    writing-mode: vertical-lr;
-    direction: rtl;
-    width: 6px;
-    height: 55px;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 55px;
+    /* horizontal width */
+    height: 4px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
     outline: none;
@@ -234,6 +234,11 @@
 
 .input-box {
     padding: 8px 0;
+}
+
+/* board-page: push content below macOS title bar + opacity pill */
+board-page .page {
+    padding-top: 80px;
 }
 
 .input-box .btn {
@@ -357,6 +362,8 @@
 #chat-messages .message {
     display: flex;
     align-items: flex-start;
+    flex-wrap: wrap;
+    /* allow .img-preview to break to its own row */
     margin-bottom: 5px;
 }
 
@@ -484,4 +491,30 @@
 
 .mode-selector button:hover {
     background-color: #555555;
+}
+
+/* ---- Image preview inside chat messages ---- */
+.img-preview {
+    flex: 0 0 100%;
+    /* break to its own row, full width */
+    padding-left: 130px;
+    /* align with .content (120px author + 10px gap) */
+    margin-top: 6px;
+    box-sizing: border-box;
+}
+
+.img-preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 8px;
+    object-fit: contain;
+    margin: 0 auto;
+    /* center the image */
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.img-preview img:hover {
+    opacity: 0.85;
 }

@@ -94,11 +94,13 @@ async function fetchMessages(postId) {
         while (!pollingAborted) {
             chatLoading.style.display = 'block';
             const messages = await FetchPostMessages(postId, hash);
-            if (pollingAborted) break;   // check again after await
+            if (pollingAborted) break;
             chatLoading.style.display = 'none';
-            console.log("hash: ", hash);
-            console.log('Fetching messages:', messages);
-            if (messages !== null) {
+            // Guard: only update hash and display if we got real messages.
+            // If messages is null or empty [], skip to avoid hash becoming
+            // undefined (which would cause the backend to return all messages
+            // from the start on the next poll, causing duplicates).
+            if (messages && messages.length > 0) {
                 hash = messages[messages.length - 1].hash;
                 displayMessages(messages);
             }
@@ -117,48 +119,93 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const MAX_MESSAGES = 300; // cap DOM nodes to avoid layout slowdown
+
 function displayMessages(messages) {
-    messages.forEach(message => {
-        displayMessage(message.author, message.content);
+    // ONE isAtBottom() check before any DOM change (avoids N layout reflows)
+    const wasAtBottom = isAtBottom();
+
+    const batchFragment = document.createDocumentFragment();
+    let hasImage = false;
+
+    messages.forEach(msg => {
+        const el = buildMessageEl(msg.author, msg.content, wasAtBottom);
+        if (el.hasImage) hasImage = true;
+        batchFragment.appendChild(el.node);
     });
+
+    chatMessages.appendChild(batchFragment);
+
+    // Trim oldest messages if over the cap
+    while (chatMessages.children.length > MAX_MESSAGES) {
+        chatMessages.removeChild(chatMessages.firstChild);
+    }
+
+    // ONE scroll call for the whole batch
+    if (wasAtBottom) {
+        scrollToBottom();
+    } else {
+        newMessageAlert.style.display = 'block';
+    }
 }
 
-const chatMessages = document.getElementById('chat-messages');
-const newMessageAlert = document.getElementById('newMessageAlert');
-
-function displayMessage(author, message) {
-    const isBottom = isAtBottom();
-    const fragment = document.createDocumentFragment();
+/**
+ * Builds a message DOM node WITHOUT touching the live DOM or triggering
+ * layout. Returns { node, hasImage } so the caller can decide on scrolling.
+ */
+function buildMessageEl(author, message, wasAtBottom) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message';
+
     const authorDiv = document.createElement('div');
     authorDiv.className = 'author';
     authorDiv.style.color = getRandomColor();
     authorDiv.textContent = `${author}: `;
+
     const contentDiv = document.createElement('div');
     contentDiv.className = 'content';
     contentDiv.textContent = message;
+
     messageDiv.appendChild(authorDiv);
     messageDiv.appendChild(contentDiv);
-    fragment.appendChild(messageDiv);
-    chatMessages.appendChild(fragment);
-    // Scroll to bottom
-    if (isBottom) {
-        scrollToBottom();
-        console.log('is at bottom.');
-    } else {
-        newMessageAlert.style.display = 'block';
-    }
 
-    requestAnimationFrame(() => {
-        chatMessages.style.display = 'none';
-        chatMessages.offsetHeight; // Trigger reflow
-        chatMessages.style.display = 'block';
-    });
+    // ── Image URL preview ──────────────────────────────────────────────────
+    const imgUrlRegex = /https?:\/\/\S+\.(?:jpg|jpeg|png|gif|webp|bmp)(\?\S*)?/gi;
+    const imgUrls = message.match(imgUrlRegex);
+    let hasImage = false;
+    if (imgUrls) {
+        hasImage = true;
+        imgUrls.forEach(rawUrl => {
+            const url = rawUrl.replace(/^http:\/\//i, 'https://');
+            const preview = document.createElement('div');
+            preview.className = 'img-preview';
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '圖片';
+            img.loading = 'lazy';
+            img.addEventListener('load', () => {
+                contentDiv.textContent = contentDiv.textContent
+                    .replace(rawUrl, '').replace(url, '').trim();
+                if (wasAtBottom) scrollToBottom();
+            });
+            img.addEventListener('error', () => { preview.style.display = 'none'; });
+            preview.appendChild(img);
+            messageDiv.appendChild(preview);
+        });
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
+    return { node: messageDiv, hasImage };
 }
 
+
+const chatMessages = document.getElementById('chat-messages');
+const newMessageAlert = document.getElementById('newMessageAlert');
+
 function isAtBottom() {
-    return chatMessages.scrollHeight - chatMessages.scrollTop === chatMessages.clientHeight;
+    // Use a 50px threshold so that image loading (which adds height after the
+    // scroll check) doesn't break the auto-scroll detection.
+    return chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 50;
 }
 
 chatMessages.addEventListener('scroll', () => {

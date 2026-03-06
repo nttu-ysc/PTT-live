@@ -59,5 +59,11 @@
           {{end}}
         </array>
         {{end}}
+        <!-- Allow HTTP image loads inside the WKWebView (ATS exception) -->
+        <key>NSAppTransportSecurity</key>
+        <dict>
+            <key>NSAllowsArbitraryLoadsInWebContent</key>
+            <true/>
+        </dict>
     </dict>
 </plist>

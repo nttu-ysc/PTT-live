@@ -359,23 +359,34 @@ type Message struct {
 func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, error) {
 	c.Lock()
 	defer c.Unlock()
-	c.write([]byte(fmt.Sprintf("#%s\r\r", aid)))
-	screen, _ := c.read(3 * time.Second)
 
-	if !bytes.Contains(screen, []byte("100%")) {
-		c.write([]byte("$"))
-		screen, _ = c.read(3 * time.Second)
-		for {
-			if bytes.Contains(screen, []byte("100%")) {
-				break
-			}
-			tmp, err := c.read(3 * time.Second)
-			if err != nil {
-				break
-			}
-			screen = append(screen, tmp...)
+	// Step 1: Navigate to the post
+	c.write([]byte(fmt.Sprintf("#%s\r\r", aid)))
+	// Wait briefly for BBS to process navigation before jumping to end
+	c.read(1 * time.Second)
+
+	// Step 2: Jump to the end of the post
+	c.write([]byte("$"))
+
+	// Step 3: Read frames until we see "100%" (= end of post).
+	// ONLY keep the last two frames instead of accumulating everything.
+	// Previously screen=append(screen,tmp...) grew O(N) with message count,
+	// making the regex run on MBs of ANSI data. Now it's at most 2 frames.
+	var prev, cur []byte
+	for i := 0; i < 30; i++ {
+		tmp, err := c.read(1 * time.Second)
+		if err != nil {
+			break // timeout: no more data
+		}
+		prev = cur
+		cur = tmp
+		if bytes.Contains(tmp, []byte("100%")) {
+			break
 		}
 	}
+
+	// Merge last two frames to handle messages split across frame boundary
+	screen := append(prev, cur...)
 
 	matches := msgReg.FindAllStringSubmatch(string(screen), -1)
 	messages := new([]Message)

@@ -11,8 +11,8 @@
     <div id="loading-container">
         <img src="src/assets/images/loading.gif" alt="Loading" class="loading">
     </div>
-    <!-- Global opacity slider — horizontal strip below title bar, always visible -->
-    <div class="opacity-bar" id="opacity-bar" style="--wails-draggable: no-drag;">
+    <!-- Global opacity slider — hidden on login page, shown after login -->
+    <div class="opacity-bar" id="opacity-bar" style="--wails-draggable: no-drag; display: none;">
         <input type="range" id="opacity-slider" min="0" max="100" value="100" step="1"
             style="--wails-draggable: no-drag;">
     </div>

@@ -1,7 +1,7 @@
 import logo from '../assets/images/logo-universal.png';
 import ptt from '../assets/images/ptt.png';
 
-import {Login} from '../../wailsjs/go/pttclient/PttClient.js';
+import { Login } from '../../wailsjs/go/pttclient/PttClient.js';
 
 class LoginPage extends HTMLElement {
     connectedCallback() {
@@ -39,6 +39,8 @@ class LoginPage extends HTMLElement {
             Login(account, password)
                 .then((result) => {
                     errorMessageDiv.textContent = '';
+                    // Show the opacity bar now that we've left the login page
+                    document.getElementById('opacity-bar').style.display = 'flex';
                     this.style.display = 'none';
                     document.querySelector('board-page').style.display = 'block';
                     document.querySelector('#boardName').focus();
