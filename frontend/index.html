@@ -1,56 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>PTT Live</title>
 </head>
-<body>
-<div id="loading-container">
-    <img src="src/assets/images/loading.gif" alt="Loading" class="loading">
-</div>
-<login-page></login-page>
-<board-page style="display: none;"></board-page>
-<post-list-page style="display: none;">
-    <!--    <div class="toolbar">-->
-    <!--        <button class="backButton btn list-back">Back</button>-->
-    <!--    </div>-->
-    <div id="post-list"></div>
-</post-list-page>
-<post-detail-page style="display: none;">
-    <!--    <div class="toolbar">-->
-    <!--        <button class="backButton btn detail-back">Back</button>-->
-    <!--    </div>-->
-    <div id="msg-container">
-        <div id="chat-container">
-            <div id="chat-loading"></div>
-            <div id="chat-messages">
-            </div>
-            <div id="newMessageAlert" onclick="scrollToBottom()"></div>
-        </div>
-        <div>
-            <form id="chat-form" class="input-container">
-                <input id="chat-input" type="text" placeholder="Type a message...">
-                <button id="send-chat-btn" class="btn" type="submit">Send</button>
-            </form>
-        </div>
-        <div class="mode-selector" id="modeSelector">
-            <button data-mode="1">推</button>
-            <button data-mode="2">噓</button>
-            <button data-mode="3">-></button>
-        </div>
-    </div>
-</post-detail-page>
-<main-page style="display: none;"></main-page>
-<script src="./src/main.js" type="module"></script>
-<script>
-    function scrollToBottom() {
-        const chatMessages = document.getElementById('chat-messages');
-        const newMessageAlert = document.getElementById('newMessageAlert');
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        newMessageAlert.style.display = 'none';
-    }
-</script>
-</body>
-</html>
 
+<body>
+    <div id="loading-container">
+        <img src="src/assets/images/loading.gif" alt="Loading" class="loading">
+    </div>
+    <!-- Global opacity slider — horizontal strip below title bar, always visible -->
+    <div class="opacity-bar" id="opacity-bar" style="--wails-draggable: no-drag;">
+        <input type="range" id="opacity-slider" min="0" max="100" value="100" step="1"
+            style="--wails-draggable: no-drag;">
+    </div>
+    <login-page></login-page>
+    <board-page style="display: none;"></board-page>
+    <post-list-page style="display: none;">
+        <div class="toolbar">
+            <button class="toolbar-btn" id="list-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                返回
+            </button>
+            <span class="toolbar-title" id="board-name-label"></span>
+            <button class="toolbar-btn" id="list-refresh-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                重新整理
+            </button>
+        </div>
+        <div id="post-list"></div>
+    </post-list-page>
+    <post-detail-page style="display: none;">
+        <div class="toolbar">
+            <button class="toolbar-btn" id="detail-back-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                返回
+            </button>
+            <span class="toolbar-title" id="post-title-label">Live 聊天室</span>
+            <!-- Spacer to balance the toolbar and keep title centered -->
+            <span class="toolbar-spacer"></span>
+        </div>
+        <div id="msg-container">
+            <div id="chat-container">
+                <div id="chat-loading"></div>
+                <div id="chat-messages">
+                </div>
+                <div id="newMessageAlert" onclick="scrollToBottom()"></div>
+            </div>
+            <div>
+                <form id="chat-form" class="input-container">
+                    <input id="chat-input" type="text" placeholder="Type a message...">
+                    <button id="send-chat-btn" class="btn" type="submit">Send</button>
+                </form>
+            </div>
+            <div class="mode-selector" id="modeSelector">
+                <button data-mode="1">推</button>
+                <button data-mode="2">噓</button>
+                <button data-mode="3">-></button>
+            </div>
+        </div>
+    </post-detail-page>
+    <main-page style="display: none;"></main-page>
+    <script src="./src/main.js" type="module"></script>
+    <script>
+        function scrollToBottom() {
+            const chatMessages = document.getElementById('chat-messages');
+            const newMessageAlert = document.getElementById('newMessageAlert');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            newMessageAlert.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

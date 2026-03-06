@@ -1,10 +1,13 @@
-import {FetchPostMessages, SendMessage} from "../../wailsjs/go/pttclient/PttClient";
+import { FetchPostMessages, SendMessage } from "../../wailsjs/go/pttclient/PttClient";
+
+// Abort controller for the polling loop – replaced each time we open a post
+let pollingAborted = false;
 
 export function fetchPostDetail(postId) {
     initializeChat(postId);
 }
 
-const pushModes = {1: '推', 2: '噓', 3: '→'};
+const pushModes = { 1: '推', 2: '噓', 3: '→' };
 
 document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('send-chat-btn');
@@ -52,41 +55,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateSendButtonText();
+
+    // Back button: post-detail → post-list
+    const detailBackBtn = document.getElementById('detail-back-btn');
+    if (detailBackBtn) {
+        detailBackBtn.addEventListener('click', () => {
+            // Stop the polling loop
+            pollingAborted = true;
+            // Clear chat messages so next post starts fresh
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages) chatMessages.innerHTML = '';
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) chatInput.value = '';
+
+            document.querySelector('post-detail-page').style.display = 'none';
+            document.querySelector('post-list-page').style.display = 'block';
+        });
+    }
 });
 
 
 function initializeChat(postId) {
-    const chatInput = document.getElementById('chat-input');
-    const sendChatBtn = document.getElementById('send-chat-btn');
+    // Reset abort flag before starting a new fetch loop
+    pollingAborted = false;
+
+    // Clear previous messages
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) chatMessages.innerHTML = '';
 
     // Setup polling
     fetchMessages(postId);
 }
 
-// document.querySelector('.detail-back').addEventListener('click', (e) => {
-//     e.preventDefault();
-//     document.querySelector('post-detail-page').style.display = 'none';
-//     document.querySelector('post-list-page').style.display = 'block';
-// })
-
 async function fetchMessages(postId) {
-    let hash = ''
+    let hash = '';
     const chatLoading = document.getElementById('chat-loading');
     try {
-        while (true) {
+        while (!pollingAborted) {
             chatLoading.style.display = 'block';
-            const messages = await FetchPostMessages(postId, hash)
+            const messages = await FetchPostMessages(postId, hash);
+            if (pollingAborted) break;   // check again after await
             chatLoading.style.display = 'none';
-            console.log("hash: ", hash)
+            console.log("hash: ", hash);
             console.log('Fetching messages:', messages);
             if (messages !== null) {
                 hash = messages[messages.length - 1].hash;
                 displayMessages(messages);
             }
-            await sleep(1500)
+            await sleep(1500);
         }
     } catch (error) {
-        console.error(error);
+        if (!pollingAborted) {
+            console.error(error);
+        }
+    } finally {
+        chatLoading.style.display = 'none';
     }
 }
 
@@ -118,11 +141,9 @@ function displayMessage(author, message) {
     messageDiv.appendChild(authorDiv);
     messageDiv.appendChild(contentDiv);
     fragment.appendChild(messageDiv);
-    // chatMessages.appendChild(messageDiv);
     chatMessages.appendChild(fragment);
     // Scroll to bottom
     if (isBottom) {
-        // chatMessages.scrollTop = chatMessages.scrollHeight;
         scrollToBottom();
         console.log('is at bottom.');
     } else {
@@ -144,7 +165,7 @@ chatMessages.addEventListener('scroll', () => {
     if (isAtBottom()) {
         newMessageAlert.style.display = 'none';
     }
-})
+});
 
 function getRandomColor() {
     const letters = '0123456789ABCDEF';

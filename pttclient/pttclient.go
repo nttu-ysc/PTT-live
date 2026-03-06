@@ -5,9 +5,6 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
 	"io"
 	"log"
 	"os"
@@ -16,6 +13,10 @@ import (
 	"regexp"
 	"sync"
 	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type PTTClient struct {
@@ -436,4 +437,9 @@ func (c *PTTClient) SendMessage(t MessageType, message string) error {
 		log.Println("done2")
 	}
 	return nil
+}
+
+// GetHotBoards fetches the PTT hot boards list via Go (bypasses frontend CORS).
+func (c *PTTClient) GetHotBoards() ([]*pttcrawler.HotBoard, error) {
+	return pttcrawler.FetchHotBoards()
 }

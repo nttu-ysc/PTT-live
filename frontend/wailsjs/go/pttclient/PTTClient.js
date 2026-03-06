@@ -14,6 +14,10 @@ export function FetchPostMessages(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['FetchPostMessages'](arg1, arg2);
 }
 
+export function GetHotBoards() {
+  return window['go']['pttclient']['PTTClient']['GetHotBoards']();
+}
+
 export function GotoBoard(arg1) {
   return window['go']['pttclient']['PTTClient']['GotoBoard'](arg1);
 }
