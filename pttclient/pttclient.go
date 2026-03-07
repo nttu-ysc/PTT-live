@@ -363,8 +363,15 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 
 	// Step 1: Navigate to the post
 	c.write([]byte(fmt.Sprintf("#%s\r\r", aid)))
-	// Wait briefly for BBS to process navigation before jumping to end
-	c.read(1 * time.Second)
+	
+	// Drain ALL pending output to ensure clean state before `$`
+	// This prevents the first page's content from bleeding into the end page buffer
+	for {
+		_, err := c.read(500 * time.Millisecond)
+		if err != nil {
+			break
+		}
+	}
 
 	// Step 2: Jump to the end of the post
 	c.write([]byte("$"))
@@ -384,29 +391,40 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 		}
 	}
 
+	// Run cleanData again on the fully accumulated screen to catch split ANSI sequences
+	screen = cleanData(screen)
+
 	matches := msgReg.FindAllStringSubmatch(string(screen), -1)
 	messages := new([]Message)
+	seen := make(map[string]bool)
 	
-	// Precompile regex to strip out garbage characters (Null bytes, control codes, zero-width spaces, and replacement character)
+	// Precompile regex to strip out garbage characters
 	garbageReg := regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
+	spaceTrimReg := regexp.MustCompile(`^\s+|\s+$`)
 
 	for i := len(matches) - 1; i >= 0; i-- {
-		h := md5.Sum([]byte(matches[i][2] + matches[i][3] + matches[i][4]))
+		content := matches[i][3]
+		// Aggressively clean up invisible/garbage chars
+		content = garbageReg.ReplaceAllString(content, "")
+		// Trim edge spaces so varying terminal spaces don't change the hash
+		content = spaceTrimReg.ReplaceAllString(content, "")
+
+		h := md5.Sum([]byte(matches[i][2] + content + matches[i][4]))
 		hash := fmt.Sprintf("%x", h)
+		
 		if hash == msgHash {
 			break
 		}
+
+		if seen[hash] {
+			continue // Skip duplicate lines rendered on the same screen
+		}
+		seen[hash] = true
 
 		t, err := time.Parse("01/02 15:04", matches[i][4])
 		if err != nil {
 			t = time.Now()
 		}
-		
-		content := matches[i][3]
-		// Aggressively clean up invisible/garbage chars
-		content = garbageReg.ReplaceAllString(content, "")
-		// Note: we don't trim all spaces if they might be intentional, but TrimSpace cleans up the edges
-		content = regexp.MustCompile(`^\s+|\s+$`).ReplaceAllString(content, "")
 
 		*messages = append(*messages, Message{
 			Time:    t,
