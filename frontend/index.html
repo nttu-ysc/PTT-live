@@ -53,8 +53,15 @@
             <!-- Spacer to balance the toolbar and keep title centered -->
             <span class="toolbar-spacer"></span>
         </div>
+        <!-- Fixed delay slider pill on the left side to avoid overlapping with right-side opacity slider -->
+        <div class="delay-bar" id="delay-bar" style="--wails-draggable: no-drag;">
+            <label for="delay-slider" style="margin:0; font-size:12px; color:rgba(255,255,255,0.85); font-weight:600;">防雷延遲</label>
+            <input type="range" id="delay-slider" min="0" max="60" value="0" step="1" style="--wails-draggable: no-drag;">
+        </div>
         <div id="msg-container">
             <div id="chat-container">
+                <!-- Overlay for showing delay seconds -->
+                <div id="delay-overlay" class="delay-overlay" style="display: none;"></div>
                 <div id="chat-loading"></div>
                 <div id="chat-messages">
                 </div>

@@ -155,11 +155,32 @@
     opacity: 0.65;
 }
 
-#opacity-slider {
+/* ---- Delay bar pill (anchored top-left inside post-detail) ---- */
+.delay-bar {
+    --wails-draggable: no-drag;
+    position: fixed;
+    /* same height as opacity-bar */
+    top: 74px;
+    left: 10px;
+    z-index: 200;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: rgba(30, 30, 30, 0.6);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+}
+
+#opacity-slider,
+#delay-slider {
     --wails-draggable: no-drag;
     -webkit-appearance: none;
     appearance: none;
-    width: 55px;
+    width: 60px;
     /* horizontal width */
     height: 4px;
     background: rgba(255, 255, 255, 0.2);
@@ -169,7 +190,8 @@
     accent-color: rgba(255, 255, 255, 0.8);
 }
 
-#opacity-slider::-webkit-slider-thumb {
+#opacity-slider::-webkit-slider-thumb,
+#delay-slider::-webkit-slider-thumb {
     --wails-draggable: no-drag;
     -webkit-appearance: none;
     width: 13px;
@@ -181,7 +203,8 @@
     transition: transform 0.1s ease;
 }
 
-#opacity-slider::-webkit-slider-thumb:hover {
+#opacity-slider::-webkit-slider-thumb:hover,
+#delay-slider::-webkit-slider-thumb:hover {
     transform: scale(1.2);
 }
 
@@ -314,7 +337,8 @@ board-page .page {
 #chat-container {
     flex: 1;
     position: relative;
-    padding-top: 20px;
+    padding-top: 40px;
+    /* Increased to avoid overlap with delay bar pill */
     display: flex;
     overflow-y: auto;
     flex-direction: column;
@@ -436,61 +460,87 @@ board-page .page {
 .input-container {
     flex: 0.5;
     display: flex;
-    padding: 10px;
-    /*border-top: 1px solid #ccc;*/
+    align-items: center;
+    padding: 10px 15px;
+    /* background-color: #f7f9fc; */
+    border-top: 1px solid #e0e6ed;
 }
 
 #chat-input {
-    font-size: 14px;
+    font-size: 15px;
     flex: 9;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    margin-right: 10px;
+    padding: 12px 18px;
+    border-radius: 20px;
+    border: 1px solid #d1d9e2;
+    margin-right: 12px;
+    background-color: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+#chat-input:focus {
+    border-color: #5b9bd5;
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.2);
 }
 
 #send-chat-btn {
-    flex: 1;
-    background-image: url("assets/images/send.png");
-    background-size: contain;
-    /* 使背景图像覆盖整个按钮 */
-    background-position: center;
-    background-repeat: no-repeat;
-    display: inline-block;
+    flex: 0 0 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #5b9bd5;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border: none;
     cursor: pointer;
     outline: none;
-    /* 移除按钮的聚焦轮廓 */
-    -webkit-appearance: none;
-    /* 移除按钮的默认WebKit样式 */
-    -moz-appearance: none;
-    /* 移除按钮的默认Mozilla样式 */
-    appearance: none;
-    /* 移除按钮的默认样式 */
-    background-color: transparent;
-    /* 设置背景颜色透明 */
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+#send-chat-btn:hover {
+    background-color: #4a84b8;
+}
+
+#send-chat-btn:active {
+    transform: scale(0.95);
 }
 
 .mode-selector {
     display: none;
     flex-direction: column;
     position: absolute;
-    bottom: 60px;
-    right: 20px;
+    bottom: 75px;
+    right: 25px;
     background-color: white;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #d1d9e2;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 
 .mode-selector button {
-    padding: 10px;
+    padding: 12px 20px;
     border: none;
-    background: none;
+    border-bottom: 1px solid #f0f0f0;
+    background-color: white;
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.mode-selector button:last-child {
+    border-bottom: none;
 }
 
 .mode-selector button:hover {
-    background-color: #555555;
+    background-color: #edf2f7;
+    color: #5b9bd5;
 }
 
 /* ---- Image preview inside chat messages ---- */
@@ -517,4 +567,46 @@ board-page .page {
 
 .img-preview img:hover {
     opacity: 0.85;
+}
+
+/* ---- Delay Overlay Animation ---- */
+.delay-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 12px;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    opacity: 0;
+}
+
+.delay-overlay.show-overlay {
+    animation: fadeOutOverlay 1.5s forwards;
+}
+
+@keyframes fadeOutOverlay {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    15% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    70% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }

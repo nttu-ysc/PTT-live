@@ -3,6 +3,11 @@ import { FetchPostMessages, SendMessage } from "../../wailsjs/go/pttclient/PttCl
 // Abort controller for the polling loop – replaced each time we open a post
 let pollingAborted = false;
 
+// Queue for delayed messages
+let messageQueue = [];
+let currentDelayMs = 0;
+let displayInterval = null;
+
 export function fetchPostDetail(postId) {
     initializeChat(postId);
 }
@@ -62,6 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
         detailBackBtn.addEventListener('click', () => {
             // Stop the polling loop
             pollingAborted = true;
+            // Clear message queue and intervals
+            messageQueue = [];
+            if (displayInterval) {
+                clearInterval(displayInterval);
+                displayInterval = null;
+            }
             // Clear chat messages so next post starts fresh
             const chatMessages = document.getElementById('chat-messages');
             if (chatMessages) chatMessages.innerHTML = '';
@@ -72,12 +83,50 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('post-list-page').style.display = 'block';
         });
     }
+
+    // Delay slider logic
+    const delaySlider = document.getElementById('delay-slider');
+    const delayOverlay = document.getElementById('delay-overlay');
+    let overlayTimeout = null;
+
+    if (delaySlider) {
+        delaySlider.addEventListener('input', (e) => {
+            const delaySeconds = parseInt(e.target.value, 10);
+            currentDelayMs = delaySeconds * 1000;
+
+            // Show overlay animation
+            if (delayOverlay) {
+                delayOverlay.textContent = `延遲 ${delaySeconds} 秒`;
+                delayOverlay.style.display = 'block';
+                
+                // Reset animation
+                delayOverlay.classList.remove('show-overlay');
+                void delayOverlay.offsetWidth; // trigger reflow
+                delayOverlay.classList.add('show-overlay');
+
+                if (overlayTimeout) clearTimeout(overlayTimeout);
+                overlayTimeout = setTimeout(() => {
+                    delayOverlay.style.display = 'none';
+                    delayOverlay.classList.remove('show-overlay');
+                }, 1500); // Wait for the CSS animation to complete
+            }
+        });
+    }
 });
 
 
 function initializeChat(postId) {
     // Reset abort flag before starting a new fetch loop
     pollingAborted = false;
+
+    // Reset delay state
+    messageQueue = [];
+    currentDelayMs = parseInt(document.getElementById('delay-slider')?.value || 0, 10) * 1000;
+    
+    if (displayInterval) {
+        clearInterval(displayInterval);
+    }
+    displayInterval = setInterval(processMessageQueue, 500);
 
     // Clear previous messages
     const chatMessages = document.getElementById('chat-messages');
@@ -97,12 +146,15 @@ async function fetchMessages(postId) {
             if (pollingAborted) break;
             chatLoading.style.display = 'none';
             // Guard: only update hash and display if we got real messages.
-            // If messages is null or empty [], skip to avoid hash becoming
-            // undefined (which would cause the backend to return all messages
-            // from the start on the next poll, causing duplicates).
             if (messages && messages.length > 0) {
                 hash = messages[messages.length - 1].hash;
-                displayMessages(messages);
+                
+                const now = Date.now();
+                // Tag each message with its scheduled display time
+                messages.forEach(msg => {
+                    msg.scheduledTime = now + currentDelayMs;
+                    messageQueue.push(msg);
+                });
             }
             await sleep(1500);
         }
@@ -112,6 +164,22 @@ async function fetchMessages(postId) {
         }
     } finally {
         chatLoading.style.display = 'none';
+    }
+}
+
+function processMessageQueue() {
+    if (messageQueue.length === 0) return;
+    
+    const now = Date.now();
+    const readyMessages = [];
+    
+    // Extract messages whose scheduled time has passed
+    while (messageQueue.length > 0 && messageQueue[0].scheduledTime <= now) {
+        readyMessages.push(messageQueue.shift());
+    }
+
+    if (readyMessages.length > 0) {
+        displayMessages(readyMessages);
     }
 }
 
@@ -136,9 +204,21 @@ function displayMessages(messages) {
 
     chatMessages.appendChild(batchFragment);
 
-    // Trim oldest messages if over the cap
+    // Trim oldest messages if over the cap and apply scroll compensation
+    let removedHeight = 0;
     while (chatMessages.children.length > MAX_MESSAGES) {
-        chatMessages.removeChild(chatMessages.firstChild);
+        const firstChild = chatMessages.firstChild;
+        if (!wasAtBottom) {
+            // Include message margin-bottom (typically 5px based on CSS)
+            // or use offsetHeight which gives exact pixel height
+            // We use getBoundingClientRect or offsetHeight safely before removal
+            removedHeight += firstChild.offsetHeight + 5; 
+        }
+        chatMessages.removeChild(firstChild);
+    }
+
+    if (!wasAtBottom && removedHeight > 0) {
+        chatMessages.scrollTop -= removedHeight;
     }
 
     // ONE scroll call for the whole batch

@@ -193,25 +193,26 @@ func (w *customOut) Write(p []byte) (n int, err error) {
 }
 
 func cleanData(data []byte) []byte {
+	// First strip out general control characters except for \x1B, \n, \r, \t, and \x08 (which are used by terminal/PTT)
+	data = regexp.MustCompile(`[\x00-\x07\x0B\x0C\x0E-\x1A\x1C-\x1F\x7F]+`).ReplaceAll(data, nil)
+
 	// Replace ANSI escape sequences with =ESC=.
 	data = regexp.MustCompile(`\x1B`).ReplaceAll(data, nil)
 
 	// Remove any remaining ANSI escape codes.
 	data = regexp.MustCompile(`\[[\d+;]*m`).ReplaceAll(data, nil)
 
-	// Replace any [21;2H, [1;3H to change line
-	data = regexp.MustCompile(`\[\d+;[234]H`).ReplaceAll(data, []byte("\n"))
-	data = regexp.MustCompile(`\[[\d;]*H`).ReplaceAll(data, nil)
+	// Replace any [21;2H, [1;3H to change line - matching cursor positioning commands up to column 4
+	data = regexp.MustCompile(`\[\d+;[0-4]H`).ReplaceAll(data, []byte("\n"))
+	
+	// Remove leftover positional H/r/J/K ANSI commands
+	data = regexp.MustCompile(`\[[\d;]*[HrJK]`).ReplaceAll(data, nil)
 
 	// Remove carriage returns.
 	data = bytes.ReplaceAll(data, []byte{'\r'}, nil)
 
 	// Remove backspaces.
 	data = bytes.ReplaceAll(data, []byte{' ', '\x08'}, nil)
-
-	// remove [H [K
-	data = bytes.ReplaceAll(data, []byte("[K"), nil)
-	data = bytes.ReplaceAll(data, []byte("[H"), nil)
 
 	return data
 }
@@ -369,27 +370,26 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 	c.write([]byte("$"))
 
 	// Step 3: Read frames until we see "100%" (= end of post).
-	// ONLY keep the last two frames instead of accumulating everything.
-	// Previously screen=append(screen,tmp...) grew O(N) with message count,
-	// making the regex run on MBs of ANSI data. Now it's at most 2 frames.
-	var prev, cur []byte
+	// We must accumulate all chunks (TCP packets) received during this poll
+	// to ensure we capture the full screen text without missing the `msgHash`.
+	var screen []byte
 	for i := 0; i < 30; i++ {
 		tmp, err := c.read(1 * time.Second)
 		if err != nil {
 			break // timeout: no more data
 		}
-		prev = cur
-		cur = tmp
+		screen = append(screen, tmp...)
 		if bytes.Contains(tmp, []byte("100%")) {
 			break
 		}
 	}
 
-	// Merge last two frames to handle messages split across frame boundary
-	screen := append(prev, cur...)
-
 	matches := msgReg.FindAllStringSubmatch(string(screen), -1)
 	messages := new([]Message)
+	
+	// Precompile regex to strip out garbage characters (Null bytes, control codes, zero-width spaces, and replacement character)
+	garbageReg := regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
+
 	for i := len(matches) - 1; i >= 0; i-- {
 		h := md5.Sum([]byte(matches[i][2] + matches[i][3] + matches[i][4]))
 		hash := fmt.Sprintf("%x", h)
@@ -401,9 +401,16 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 		if err != nil {
 			t = time.Now()
 		}
+		
+		content := matches[i][3]
+		// Aggressively clean up invisible/garbage chars
+		content = garbageReg.ReplaceAllString(content, "")
+		// Note: we don't trim all spaces if they might be intentional, but TrimSpace cleans up the edges
+		content = regexp.MustCompile(`^\s+|\s+$`).ReplaceAllString(content, "")
+
 		*messages = append(*messages, Message{
 			Time:    t,
-			Content: matches[i][3],
+			Content: content,
 			Author:  matches[i][2],
 			Hash:    hash,
 		})
