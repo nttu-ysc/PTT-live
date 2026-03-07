@@ -34,6 +34,10 @@ export function Reconnect() {
   return window['go']['pttclient']['PTTClient']['Reconnect']();
 }
 
+export function ReturnToBoard() {
+  return window['go']['pttclient']['PTTClient']['ReturnToBoard']();
+}
+
 export function SendMessage(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['SendMessage'](arg1, arg2);
 }

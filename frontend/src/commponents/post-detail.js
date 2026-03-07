@@ -1,4 +1,4 @@
-import { FetchPostMessages, SendMessage } from "../../wailsjs/go/pttclient/PttClient";
+import { FetchPostMessages, SendMessage, ReturnToBoard } from "../../wailsjs/go/pttclient/PttClient";
 
 // Abort controller for the polling loop – replaced each time we open a post
 let pollingAborted = false;
@@ -67,6 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
         detailBackBtn.addEventListener('click', () => {
             // Stop the polling loop
             pollingAborted = true;
+            
+            // Notify the Go backend to send 'q' and exit the article on PTT
+            ReturnToBoard();
+
             // Clear message queue and intervals
             messageQueue = [];
             if (displayInterval) {
@@ -168,6 +172,15 @@ async function fetchMessages(postId) {
 }
 
 function processMessageQueue() {
+    // Failsafe: if the view was exited and the event listener missed clearing the interval
+    if (pollingAborted) {
+        if (displayInterval) {
+            clearInterval(displayInterval);
+            displayInterval = null;
+        }
+        return;
+    }
+
     if (messageQueue.length === 0) return;
     
     const now = Date.now();
@@ -230,6 +243,20 @@ function displayMessages(messages) {
 }
 
 /**
+ * RequestAnimationFrame Debounce for scrolling
+ * Prevents multiple images loading simultaneously from forcing the browser
+ * to Layout/Reflow repeatedly in the same frame.
+ */
+let scrollDebounceTimer = null;
+function requestScrollToBottom() {
+    if (scrollDebounceTimer) return; // Wait for the next frame
+    scrollDebounceTimer = requestAnimationFrame(() => {
+        scrollToBottom();
+        scrollDebounceTimer = null;
+    });
+}
+
+/**
  * Builds a message DOM node WITHOUT touching the live DOM or triggering
  * layout. Returns { node, hasImage } so the caller can decide on scrolling.
  */
@@ -266,7 +293,8 @@ function buildMessageEl(author, message, wasAtBottom) {
             img.addEventListener('load', () => {
                 contentDiv.textContent = contentDiv.textContent
                     .replace(rawUrl, '').replace(url, '').trim();
-                if (wasAtBottom) scrollToBottom();
+                // Use debounced scrolling to prevent Layout Thrashing spikes
+                if (wasAtBottom) requestScrollToBottom();
             });
             img.addEventListener('error', () => { preview.style.display = 'none'; });
             preview.appendChild(img);

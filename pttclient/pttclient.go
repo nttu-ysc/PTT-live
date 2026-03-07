@@ -135,7 +135,7 @@ func (c *PTTClient) Connect() {
 			})
 			os.Exit(1)
 		case <-c.reconnect:
-			c = NewPttClient()
+			// Safely exit the old goroutine. The Reconnect() method will launch a new Connect()
 			return
 		}
 	}(c)
@@ -148,7 +148,26 @@ func (c *PTTClient) Reconnect() {
 }
 
 func (c *PTTClient) write(p []byte) (int, error) {
-	return c.sessionIn.Write(p)
+	// Wrap the synchronous Write in a channel to prevent infinite TCP blocking
+	// if the connection drops or the PTT server window size freezes.
+	errCh := make(chan error, 1)
+	nCh := make(chan int, 1)
+
+	go func() {
+		n, err := c.sessionIn.Write(p)
+		errCh <- err
+		nCh <- n
+	}()
+
+	select {
+	case err := <-errCh:
+		return <-nCh, err
+	case <-time.After(5 * time.Second):
+		log.Println("SSH Write Timeout! TCP Connection is likely dead. Triggering Reconnect.")
+		// Background Reconnect since the socket is frozen
+		go c.Reconnect()
+		return 0, ptterror.Timeout
+	}
 }
 
 func (c *PTTClient) read(t time.Duration) ([]byte, error) {
@@ -188,25 +207,47 @@ func (w *customOut) Read(t time.Duration) ([]byte, error) {
 
 func (w *customOut) Write(p []byte) (n int, err error) {
 	newP := cleanData(p)
-	w.reader <- newP
+	
+	// Non-blocking send with ring-buffer behavior to prevent channel deadlock
+	// If the channel is full (e.g. we stopped polling but PTT is still sending), drop the oldest packet.
+	select {
+	case w.reader <- newP:
+	default:
+		// Channel is full. Pop the oldest element, then push the new one.
+		select {
+		case <-w.reader:
+		default:
+		}
+		w.reader <- newP
+	}
+	
 	return os.Stdout.Write(p)
 }
 
+// Globals for cleanData regex substitutions
+var (
+	ctrlCharReg    = regexp.MustCompile(`[\x00-\x07\x0B\x0C\x0E-\x1A\x1C-\x1F\x7F]+`)
+	ansiEscReg     = regexp.MustCompile(`\x1B`)
+	ansiColorReg   = regexp.MustCompile(`\[[\d+;]*m`)
+	ansiPosLineReg = regexp.MustCompile(`\[\d+;[0-4]H`)
+	ansiPosLeftReg = regexp.MustCompile(`\[[\d;]*[HrJK]`)
+)
+
 func cleanData(data []byte) []byte {
 	// First strip out general control characters except for \x1B, \n, \r, \t, and \x08 (which are used by terminal/PTT)
-	data = regexp.MustCompile(`[\x00-\x07\x0B\x0C\x0E-\x1A\x1C-\x1F\x7F]+`).ReplaceAll(data, nil)
+	data = ctrlCharReg.ReplaceAll(data, nil)
 
 	// Replace ANSI escape sequences with =ESC=.
-	data = regexp.MustCompile(`\x1B`).ReplaceAll(data, nil)
+	data = ansiEscReg.ReplaceAll(data, nil)
 
 	// Remove any remaining ANSI escape codes.
-	data = regexp.MustCompile(`\[[\d+;]*m`).ReplaceAll(data, nil)
+	data = ansiColorReg.ReplaceAll(data, nil)
 
 	// Replace any [21;2H, [1;3H to change line - matching cursor positioning commands up to column 4
-	data = regexp.MustCompile(`\[\d+;[0-4]H`).ReplaceAll(data, []byte("\n"))
+	data = ansiPosLineReg.ReplaceAll(data, []byte("\n"))
 	
 	// Remove leftover positional H/r/J/K ANSI commands
-	data = regexp.MustCompile(`\[[\d;]*[HrJK]`).ReplaceAll(data, nil)
+	data = ansiPosLeftReg.ReplaceAll(data, nil)
 
 	// Remove carriage returns.
 	data = bytes.ReplaceAll(data, []byte{'\r'}, nil)
@@ -348,7 +389,11 @@ func (c *PTTClient) GotoBoard(board string) (*[]pttcrawler.Post, error) {
 //	return posts, nil
 //}
 
-var msgReg = regexp.MustCompile(`(推|噓|→)?\s+(\S+)\s*:\s+(.*)\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
+var (
+	msgReg       = regexp.MustCompile(`(推|噓| →)?\s+(\S+)\s*:\s+(.*)\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
+	garbageReg   = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
+	spaceTrimReg = regexp.MustCompile(`^\s+|\s+$`)
+)
 
 type Message struct {
 	Time    time.Time `json:"time"`
@@ -397,10 +442,6 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 	matches := msgReg.FindAllStringSubmatch(string(screen), -1)
 	messages := new([]Message)
 	seen := make(map[string]bool)
-	
-	// Precompile regex to strip out garbage characters
-	garbageReg := regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
-	spaceTrimReg := regexp.MustCompile(`^\s+|\s+$`)
 
 	for i := len(matches) - 1; i >= 0; i-- {
 		content := matches[i][3]
@@ -478,4 +519,14 @@ func (c *PTTClient) SendMessage(t MessageType, message string) error {
 // GetHotBoards fetches the PTT hot boards list via Go (bypasses frontend CORS).
 func (c *PTTClient) GetHotBoards() ([]*pttcrawler.HotBoard, error) {
 	return pttcrawler.FetchHotBoards()
+}
+
+// ReturnToBoard sends a 'q' to the PTT session to exit the current post
+// and synchronize the backend state machine with the frontend view.
+func (c *PTTClient) ReturnToBoard() {
+	c.Lock()
+	defer c.Unlock()
+	c.write([]byte("q\r"))
+	// Briefly drain to ensure it processes the exit command
+	c.read(500 * time.Millisecond)
 }
