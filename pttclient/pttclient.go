@@ -16,7 +16,7 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 type PTTClient struct {
@@ -95,14 +95,14 @@ func (c *PTTClient) Connect() {
 
 	// 設置終端模式
 	fileDescriptor := int(os.Stdin.Fd())
-	if terminal.IsTerminal(fileDescriptor) {
-		originalState, err := terminal.MakeRaw(fileDescriptor)
+	if term.IsTerminal(fileDescriptor) {
+		originalState, err := term.MakeRaw(fileDescriptor)
 		if err != nil {
 			panic(err)
 		}
-		defer terminal.Restore(fileDescriptor, originalState)
+		defer term.Restore(fileDescriptor, originalState)
 
-		termWidth, termHeight, err := terminal.GetSize(fileDescriptor)
+		termWidth, termHeight, err := term.GetSize(fileDescriptor)
 		if err != nil {
 			panic(err)
 		}
@@ -207,7 +207,7 @@ func (w *customOut) Read(t time.Duration) ([]byte, error) {
 
 func (w *customOut) Write(p []byte) (n int, err error) {
 	newP := cleanData(p)
-	
+
 	// Non-blocking send with ring-buffer behavior to prevent channel deadlock
 	// If the channel is full (e.g. we stopped polling but PTT is still sending), drop the oldest packet.
 	select {
@@ -220,7 +220,7 @@ func (w *customOut) Write(p []byte) (n int, err error) {
 		}
 		w.reader <- newP
 	}
-	
+
 	return os.Stdout.Write(p)
 }
 
@@ -245,7 +245,7 @@ func cleanData(data []byte) []byte {
 
 	// Replace any [21;2H, [1;3H to change line - matching cursor positioning commands up to column 4
 	data = ansiPosLineReg.ReplaceAll(data, []byte("\n"))
-	
+
 	// Remove leftover positional H/r/J/K ANSI commands
 	data = ansiPosLeftReg.ReplaceAll(data, nil)
 
@@ -390,7 +390,7 @@ func (c *PTTClient) GotoBoard(board string) (*[]pttcrawler.Post, error) {
 //}
 
 var (
-	msgReg       = regexp.MustCompile(`(推|噓| →)?\s+(\S+)\s*:\s+(.*)\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
+	msgReg       = regexp.MustCompile(`(推|噓| →)?\s+(\S+)\s*:\s+(.*?)(?:\s+[\d\.:a-fA-F]+(?: \d+[KkMm]?)?)?\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
 	garbageReg   = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
 	spaceTrimReg = regexp.MustCompile(`^\s+|\s+$`)
 )
@@ -407,8 +407,8 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 	defer c.Unlock()
 
 	// Step 1: Navigate to the post
-	c.write([]byte(fmt.Sprintf("#%s\r\r", aid)))
-	
+	c.write(fmt.Appendf(nil, "#%s\r\r", aid))
+
 	// Drain ALL pending output to ensure clean state before `$`
 	// This prevents the first page's content from bleeding into the end page buffer
 	for {
@@ -425,13 +425,21 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 	// We must accumulate all chunks (TCP packets) received during this poll
 	// to ensure we capture the full screen text without missing the `msgHash`.
 	var screen []byte
-	for i := 0; i < 30; i++ {
+	for range 30 {
 		tmp, err := c.read(1 * time.Second)
 		if err != nil {
 			break // timeout: no more data
 		}
 		screen = append(screen, tmp...)
 		if bytes.Contains(tmp, []byte("100%")) {
+			// Fast drain any remaining text arriving in the same frame
+			for {
+				extra, errExtra := c.read(100 * time.Millisecond)
+				if errExtra != nil {
+					break
+				}
+				screen = append(screen, extra...)
+			}
 			break
 		}
 	}
@@ -452,7 +460,7 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 
 		h := md5.Sum([]byte(matches[i][2] + content + matches[i][4]))
 		hash := fmt.Sprintf("%x", h)
-		
+
 		if hash == msgHash {
 			break
 		}

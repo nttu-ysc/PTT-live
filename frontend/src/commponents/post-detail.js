@@ -143,8 +143,8 @@ function initializeChat(postId) {
 async function fetchMessages(postId) {
     let hash = '';
     const chatLoading = document.getElementById('chat-loading');
-    try {
-        while (!pollingAborted) {
+    while (!pollingAborted) {
+        try {
             chatLoading.style.display = 'block';
             const messages = await FetchPostMessages(postId, hash);
             if (pollingAborted) break;
@@ -160,14 +160,13 @@ async function fetchMessages(postId) {
                     messageQueue.push(msg);
                 });
             }
-            await sleep(1500);
+        } catch (error) {
+            chatLoading.style.display = 'none';
+            if (!pollingAborted) {
+                console.error("Polling error: ", error);
+            }
         }
-    } catch (error) {
-        if (!pollingAborted) {
-            console.error(error);
-        }
-    } finally {
-        chatLoading.style.display = 'none';
+        await sleep(1500);
     }
 }
 
