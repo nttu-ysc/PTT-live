@@ -1,6 +1,7 @@
 build/bin
+build/release
+build/dmg
 node_modules
 frontend/dist
 .idea
 *DS_Store
-*dmg

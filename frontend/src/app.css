@@ -610,3 +610,259 @@ board-page .page {
         opacity: 0;
     }
 }
+
+/* ── Login page version label ─────────────────────────────────────────────── */
+.login-version {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.5px;
+    user-select: none;
+    white-space: nowrap;
+}
+
+/* ── Hot boards header row (title + refresh button) ──────────────────────── */
+.hot-boards-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.hot-boards-header .hot-boards-title {
+    margin-bottom: 0;
+}
+
+.hot-boards-refresh-btn {
+    --wails-draggable: no-drag;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    padding: 3px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+    transition: color 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+}
+
+.hot-boards-refresh-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.hot-boards-refresh-btn.spinning svg {
+    animation: rotate-refresh 0.6s linear infinite;
+}
+
+/* ── About modal overlay ──────────────────────────────────────────────────── */
+.about-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 900;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.about-overlay.visible {
+    display: block;
+    opacity: 1;
+}
+
+/* ── About modal card ─────────────────────────────────────────────────────── */
+.about-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 260px;
+    background: rgba(25, 25, 30, 0.92);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    padding: 28px 24px 24px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.about-modal.visible {
+    display: block;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.about-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.about-close-btn:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.about-logo-wrap {
+    margin-bottom: 10px;
+}
+
+.about-logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.about-title {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 0.5px;
+}
+
+.about-version {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: rgba(255, 165, 0, 0.85);
+    font-weight: 600;
+}
+
+.about-desc {
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
+}
+
+.about-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.about-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.about-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.about-author {
+    margin: 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Update toast ─────────────────────────────────────────────────────────── */
+.update-toast {
+    display: none;
+    position: fixed;
+    bottom: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 280px;
+    max-width: calc(100% - 32px);
+    background: rgba(20, 20, 26, 0.92);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    padding: 12px 16px;
+    z-index: 1100;
+    opacity: 0;
+    transition: bottom 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.update-toast.visible {
+    bottom: 14px;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#update-toast-msg {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    text-align: left;
+    line-height: 1.4;
+}
+
+.update-toast-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.update-toast-action-btn {
+    --wails-draggable: no-drag;
+    padding: 5px 12px;
+    background: rgba(255, 165, 0, 0.85);
+    border: none;
+    border-radius: 6px;
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.update-toast-action-btn:hover {
+    background: rgba(255, 165, 0, 1);
+}
+
+.update-toast-close-btn {
+    --wails-draggable: no-drag;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+}
+
+.update-toast-close-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+}

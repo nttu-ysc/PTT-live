@@ -2,6 +2,7 @@ import logo from '../assets/images/logo-universal.png';
 import ptt from '../assets/images/ptt.png';
 
 import { Login } from '../../wailsjs/go/pttclient/PttClient.js';
+import { GetVersion } from '../../wailsjs/go/main/App.js';
 
 class LoginPage extends HTMLElement {
     connectedCallback() {
@@ -22,10 +23,17 @@ class LoginPage extends HTMLElement {
                         <button class="login-btn btn" type="submit">登入</button>
                     </div>
                 </form>
+                <div class="login-version" id="login-version">v…</div>
             </div>
 `;
 
         this.querySelector('#logo').src = ptt;
+
+        // Display current version
+        GetVersion().then(v => {
+            const vEl = this.querySelector('#login-version');
+            if (vEl) vEl.textContent = `v${v}`;
+        }).catch(() => {});
 
         this.querySelector('#account').focus();
         this.querySelector('#login-form').addEventListener('submit', (e) => {

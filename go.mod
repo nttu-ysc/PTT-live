@@ -4,12 +4,14 @@ go 1.25.0
 
 require (
 	github.com/gocolly/colly v1.2.0
+	github.com/minio/selfupdate v0.6.0
 	github.com/wailsapp/wails/v2 v2.11.0
 	golang.org/x/crypto v0.48.0
 	golang.org/x/term v0.40.0
 )
 
 require (
+	aead.dev/minisign v0.2.0 // indirect
 	github.com/PuerkitoBio/goquery v1.11.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/antchfx/htmlquery v1.3.6 // indirect

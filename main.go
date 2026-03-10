@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"ptt-live/pttclient"
 )
 
@@ -20,6 +24,19 @@ func main() {
 	pttClient := pttclient.NewPttClient()
 	pttClient.Connect()
 	defer pttClient.Close()
+
+	// Build menu with About item
+	appMenu := menu.NewMenu()
+	appMenuItem := appMenu.AddSubmenu("PTT Live")
+	appMenuItem.AddText("關於 PTT Live", keys.CmdOrCtrl(","), func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "show-about")
+	})
+	appMenuItem.AddSeparator()
+	appMenuItem.AddText("檢查更新", nil, func(_ *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "check-update-menu")
+	})
+	appMenuItem.AddSeparator()
+	appMenuItem.AddText(fmt.Sprintf("版本 v%s", AppVersion), nil, nil)
 
 	// Create application with options
 	err := wails.Run(&options.App{
@@ -40,7 +57,7 @@ func main() {
 			app,
 			pttClient,
 		},
-
+		Menu:      appMenu,
 		Frameless: false,
 		Mac: &mac.Options{
 			TitleBar: &mac.TitleBar{

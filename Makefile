@@ -35,7 +35,7 @@ all: universal windows
 # ── macOS Apple Silicon ───────────────────────────────────────────────────────
 mac-arm64:
 	@echo "▶ Building macOS Apple Silicon (darwin/arm64)…"
-	wails build -platform darwin/arm64 -clean
+	wails build -platform darwin/arm64
 	@rm -rf "$(STAGE_ARM64)"
 	@cp -R "$(BIN_DIR)/$(APP).app" "$(STAGE_ARM64)"
 	@echo "✅ arm64 暫存於 $(STAGE_ARM64)"
@@ -43,7 +43,7 @@ mac-arm64:
 # ── macOS Intel ───────────────────────────────────────────────────────────────
 mac-amd64:
 	@echo "▶ Building macOS Intel (darwin/amd64)…"
-	wails build -platform darwin/amd64 -clean
+	wails build -platform darwin/amd64
 	@rm -rf "$(STAGE_AMD64)"
 	@cp -R "$(BIN_DIR)/$(APP).app" "$(STAGE_AMD64)"
 	@echo "✅ amd64 暫存於 $(STAGE_AMD64)"
@@ -73,7 +73,7 @@ windows:
 	@echo "▶ Building Windows (windows/amd64)…"
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
 		CC=x86_64-w64-mingw32-gcc \
-		wails build -platform windows/amd64 -clean
+		wails build -platform windows/amd64
 	@echo "✅ $(BIN_DIR)/$(APP).exe"
 
 # ── DMG (Universal) ───────────────────────────────────────────────────────────
@@ -98,12 +98,23 @@ dmg: universal
 	@echo "✅ DMG: $(DMG_OUT)"
 	@echo ""
 	@echo "  ⚠️  首次開啟若出現「無法確認開發者」，右鍵 → 開啟；或執行:"
-	@echo "       xattr -rd com.apple.quarantine /Applications/PTT\\ Live.app"
+	@echo "       xattr -rd com.apple.quarantine /Applications/PTT\ Live.app"
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
 clean:
-	rm -rf build/bin build/dmg
+	rm -rf build/bin build/dmg build/release
 	@echo "✅ Cleaned"
+
+# ── Release (For Auto-Update) ──────────────────────────────────────────────────
+# 產生純執行檔壓縮包，這是 minio/selfupdate 所需要的格式
+release: universal windows
+	@echo "▶ Packaging assets for Auto-Update…"
+	@mkdir -p build/release
+	@# macOS (Universal) -> tar.gz (包含在 .app 中的主二進位檔)
+	@tar -czvf "build/release/PTT-Live-mac-universal.tar.gz" -C "$(APP_UNIV)/Contents/MacOS" "$(APP)"
+	@# Windows (amd64) -> zip
+	@cd $(BIN_DIR) && zip "../release/PTT-Live-windows-amd64.zip" "$(APP).exe"
+	@echo "✅ Auto-Update assets generated in build/release/"
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 help:
@@ -113,6 +124,7 @@ help:
 	@echo "  make mac-arm64  – Apple Silicon .app"
 	@echo "  make mac-amd64  – Intel Mac .app"
 	@echo "  make windows    – Windows .exe    (需要 brew install mingw-w64)"
+	@echo "  make release    – 產生更新用的 .tar.gz / .zip 壓縮檔"
 	@echo "  make all        – Universal + Windows"
 	@echo "  make clean      – 清除 build/"
 	@echo ""
