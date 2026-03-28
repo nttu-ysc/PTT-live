@@ -392,10 +392,10 @@ func (c *PTTClient) GotoBoard(board string) (*[]pttcrawler.Post, error) {
 var (
 	// (?s) enables dot-all mode so (.*?) can capture across \n,
 	// which prevents long image URLs from being truncated at ANSI-injected newlines.
-	msgReg          = regexp.MustCompile(`(?s)(推|噓| →)?\s+(\S+)\s*:\s+(.*?)(?:\s+\d+(?:\.\d+)+(?: \d+[KkMm]?)?)?\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
-	garbageReg      = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
-	spaceTrimReg    = regexp.MustCompile(`^\s+|\s+$`)
-	internalNLReg   = regexp.MustCompile(`\n+`)
+	msgReg        = regexp.MustCompile(`(推|噓| →)?\s+(\S+)\s*:\s+(.*?)(?:\s+\d+(?:\.\d+)+(?: \d+[KkMm]?)?)?\s+(\d{2}/\d{2}\s+\d{2}:\d{2})`)
+	garbageReg    = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\x{FFFD}\x{200B}-\x{200F}]+`)
+	spaceTrimReg  = regexp.MustCompile(`^\s+|\s+$`)
+	internalNLReg = regexp.MustCompile(`\n+`)
 )
 
 type Message struct {
