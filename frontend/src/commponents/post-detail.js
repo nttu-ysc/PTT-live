@@ -1,4 +1,5 @@
 import { FetchPostMessages, SendMessage, ReturnToBoard } from "../../wailsjs/go/pttclient/PttClient";
+import { OpenURL } from "../../wailsjs/go/main/App";
 
 // Abort controller for the polling loop – replaced each time we open a post
 let pollingAborted = false;
@@ -265,7 +266,7 @@ function buildMessageEl(author, message, wasAtBottom) {
 
     const authorDiv = document.createElement('div');
     authorDiv.className = 'author';
-    authorDiv.style.color = getRandomColor();
+    authorDiv.style.color = getAuthorColor(author);
     authorDiv.textContent = `${author}: `;
 
     const contentDiv = document.createElement('div');
@@ -289,6 +290,7 @@ function buildMessageEl(author, message, wasAtBottom) {
             img.src = url;
             img.alt = '圖片';
             img.loading = 'lazy';
+            img.addEventListener('click', () => { OpenURL(url); });
             img.addEventListener('load', () => {
                 contentDiv.textContent = contentDiv.textContent
                     .replace(rawUrl, '').replace(url, '').trim();
@@ -321,11 +323,16 @@ chatMessages.addEventListener('scroll', () => {
     }
 });
 
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+const authorColors = new Map();
+
+function getAuthorColor(author) {
+    if (!authorColors.has(author)) {
+        let hash = 0;
+        for (let i = 0; i < author.length; i++) {
+            hash = (hash * 31 + author.charCodeAt(i)) | 0;
+        }
+        const hue = Math.abs(hash) % 360;
+        authorColors.set(author, `hsl(${hue}, 65%, 60%)`);
     }
-    return color;
+    return authorColors.get(author);
 }

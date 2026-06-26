@@ -303,7 +303,19 @@ func (c *PTTClient) Login(account, password string) error {
 				return ptterror.AuthErrorMax
 			}
 			if bytes.Contains(screen, []byte("您想刪除其他重複登入的連線嗎？[Y/n]")) {
-				c.write([]byte("y\r"))
+				btn, _ := runtime.MessageDialog(c.Ctx, runtime.MessageDialogOptions{
+					Type:          runtime.QuestionDialog,
+					Title:         "重複連線",
+					Message:       "偵測到其他重複登入的連線，是否要刪除？",
+					Buttons:       []string{"是", "否"},
+					DefaultButton: "是",
+					CancelButton:  "否",
+				})
+				if btn == "是" {
+					c.write([]byte("y\r"))
+				} else {
+					c.write([]byte("n\r"))
+				}
 				timer = time.NewTimer(5 * time.Second)
 			}
 			if bytes.Contains(screen, []byte("您要刪除以上錯誤嘗試的記錄嗎?")) {
