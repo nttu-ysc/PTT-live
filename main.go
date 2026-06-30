@@ -22,7 +22,7 @@ var assets embed.FS
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
-	pttClient := pttclient.NewPttClient(pttclient.NewSSHConnection())
+	pttClient := pttclient.NewPttClient(pttclient.NewWSConnection())
 	defer pttClient.Close()
 
 	// Build menu with About item
