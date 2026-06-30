@@ -4,6 +4,8 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"ptt-live/pttclient"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/menu/keys"
@@ -12,7 +14,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"ptt-live/pttclient"
 )
 
 //go:embed all:frontend/dist
@@ -21,8 +22,7 @@ var assets embed.FS
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
-	pttClient := pttclient.NewPttClient()
-	pttClient.Connect()
+	pttClient := pttclient.NewPttClient(pttclient.NewSSHConnection())
 	defer pttClient.Close()
 
 	// Build menu with About item

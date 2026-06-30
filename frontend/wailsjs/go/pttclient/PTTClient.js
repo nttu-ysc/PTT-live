@@ -6,10 +6,6 @@ export function Close() {
   return window['go']['pttclient']['PTTClient']['Close']();
 }
 
-export function Connect() {
-  return window['go']['pttclient']['PTTClient']['Connect']();
-}
-
 export function FetchPostMessages(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['FetchPostMessages'](arg1, arg2);
 }
@@ -30,10 +26,6 @@ export function Login(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['Login'](arg1, arg2);
 }
 
-export function Reconnect() {
-  return window['go']['pttclient']['PTTClient']['Reconnect']();
-}
-
 export function ReturnToBoard() {
   return window['go']['pttclient']['PTTClient']['ReturnToBoard']();
 }
@@ -48,8 +40,4 @@ export function StartUp(arg1) {
 
 export function Unlock() {
   return window['go']['pttclient']['PTTClient']['Unlock']();
-}
-
-export function Wait() {
-  return window['go']['pttclient']['PTTClient']['Wait']();
 }
