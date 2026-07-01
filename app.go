@@ -22,7 +22,7 @@ import (
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const AppVersion = "2.1.4"
+const AppVersion = "2.2.0"
 const GitHubRepo = "nttu-ysc/PTT-live"
 
 // App struct
