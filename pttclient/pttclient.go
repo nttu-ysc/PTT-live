@@ -203,31 +203,25 @@ type Message struct {
 
 func (c *PTTClient) FetchPostMessagesByAID(aid string, msgHash string) ([]Message, error) {
 	c.Lock()
-	defer c.Unlock()
+	defer func() {
+		c.write([]byte("q"))
+		c.read(500 * time.Millisecond)
+		c.Unlock()
+	}()
 	c.write(fmt.Appendf(nil, "#%s\r\r", aid))
-
-	for {
-		_, err := c.read(500 * time.Millisecond)
-		if err != nil {
-			break
-		}
-	}
-
+	c.read(500 * time.Millisecond)
 	return c.fetchPostMessages(msgHash)
 }
 
 func (c *PTTClient) FetchPostMessagesBySN(sn string, msgHash string) ([]Message, error) {
 	c.Lock()
-	defer c.Unlock()
+	defer func() {
+		c.write([]byte("q"))
+		c.read(500 * time.Millisecond)
+		c.Unlock()
+	}()
 	c.write(fmt.Appendf(nil, "%s\r\r", sn))
-
-	for {
-		_, err := c.read(500 * time.Millisecond)
-		if err != nil {
-			break
-		}
-	}
-
+	c.read(500 * time.Millisecond)
 	return c.fetchPostMessages(msgHash)
 }
 
@@ -333,9 +327,9 @@ func (c *PTTClient) GetHotBoards() ([]*pttcrawler.HotBoard, error) {
 	return pttcrawler.FetchHotBoards()
 }
 
-func (c *PTTClient) ReturnToBoard() {
-	c.Lock()
-	defer c.Unlock()
-	c.write([]byte("q\r"))
-	c.read(500 * time.Millisecond)
-}
+// func (c *PTTClient) ReturnToBoard() {
+// 	c.Lock()
+// 	defer c.Unlock()
+// 	c.write([]byte("q"))
+// 	c.read(500 * time.Millisecond)
+// }

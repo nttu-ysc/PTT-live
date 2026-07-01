@@ -34,10 +34,6 @@ export function Login(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['Login'](arg1, arg2);
 }
 
-export function ReturnToBoard() {
-  return window['go']['pttclient']['PTTClient']['ReturnToBoard']();
-}
-
 export function SendMessage(arg1, arg2) {
   return window['go']['pttclient']['PTTClient']['SendMessage'](arg1, arg2);
 }

@@ -1,4 +1,4 @@
-import { SendMessage, ReturnToBoard, FetchPostMessagesBySN } from "../../wailsjs/go/pttclient/PttClient";
+import { SendMessage, FetchPostMessagesBySN } from "../../wailsjs/go/pttclient/PttClient";
 import { OpenURL } from "../../wailsjs/go/main/App";
 
 // Abort controller for the polling loop – replaced each time we open a post
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pollingAborted = true;
             
             // Notify the Go backend to send 'q' and exit the article on PTT
-            ReturnToBoard();
+            // ReturnToBoard();
 
             // Clear message queue and intervals
             messageQueue = [];

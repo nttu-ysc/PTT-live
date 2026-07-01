@@ -21,8 +21,6 @@ export function Lock():Promise<void>;
 
 export function Login(arg1:string,arg2:string):Promise<void>;
 
-export function ReturnToBoard():Promise<void>;
-
 export function SendMessage(arg1:pttclient.MessageType,arg2:string):Promise<void>;
 
 export function StartUp(arg1:context.Context):Promise<void>;
