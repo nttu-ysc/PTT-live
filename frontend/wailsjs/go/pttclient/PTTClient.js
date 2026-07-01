@@ -6,8 +6,16 @@ export function Close() {
   return window['go']['pttclient']['PTTClient']['Close']();
 }
 
-export function FetchPostMessages(arg1, arg2) {
-  return window['go']['pttclient']['PTTClient']['FetchPostMessages'](arg1, arg2);
+export function FetchLivePosts() {
+  return window['go']['pttclient']['PTTClient']['FetchLivePosts']();
+}
+
+export function FetchPostMessagesByAID(arg1, arg2) {
+  return window['go']['pttclient']['PTTClient']['FetchPostMessagesByAID'](arg1, arg2);
+}
+
+export function FetchPostMessagesBySN(arg1, arg2) {
+  return window['go']['pttclient']['PTTClient']['FetchPostMessagesBySN'](arg1, arg2);
 }
 
 export function GetHotBoards() {

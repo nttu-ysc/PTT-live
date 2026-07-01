@@ -1,4 +1,4 @@
-import { FetchPostMessages, SendMessage, ReturnToBoard } from "../../wailsjs/go/pttclient/PttClient";
+import { SendMessage, ReturnToBoard, FetchPostMessagesBySN } from "../../wailsjs/go/pttclient/PttClient";
 import { OpenURL } from "../../wailsjs/go/main/App";
 
 // Abort controller for the polling loop – replaced each time we open a post
@@ -147,7 +147,7 @@ async function fetchMessages(postId) {
     while (!pollingAborted) {
         try {
             chatLoading.style.display = 'block';
-            const messages = await FetchPostMessages(postId, hash);
+            const messages = await FetchPostMessagesBySN(postId, hash);
             if (pollingAborted) break;
             chatLoading.style.display = 'none';
             // Guard: only update hash and display if we got real messages.

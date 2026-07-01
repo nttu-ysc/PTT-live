@@ -30,7 +30,7 @@ export function displayPosts(posts) {
             loadingContainer.style.display = 'flex';
             document.querySelector('post-list-page').style.display = 'none';
             document.querySelector('post-detail-page').style.display = 'block';
-            fetchPostDetail(post.aid);
+            fetchPostDetail(post.sn);
             loadingContainer.style.display = 'none';
         });
 

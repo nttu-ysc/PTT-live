@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"ptt-live/consts"
 	"ptt-live/pttcrawler"
 	"ptt-live/ptterror"
 	"regexp"
@@ -123,22 +124,24 @@ func (c *PTTClient) Login(account, password string) error {
 	}
 }
 
-//type Post struct {
-//	SearchId string `json:"search_id"`
-//	Author   string `json:"author"`
-//	Title    string `json:"title"`
-//}
+// postReg matches a post line from the rendered screen buffer.
+// Layout: [>] spaces  number  markPush  date  author  [□]  title
+// markPush is 1–3 rendered chars: mark(1) + pushcount(0–2), e.g. "=爆", "+33", "+ 2"
+// (爆 is wide so its \x00 trailing cell is stripped by render(), making it 1 rune)
+// □ (U+25A1) before the title is optional — some posts omit it.
+var postReg = regexp.MustCompile(`[> \t]*(\d+)[ \t]+(.{1,3}?)[ \t]+(\d{1,2}/\d{1,2})[ \t]+(\S+)[ \t]+(?:□[ \t]+)?([^\n]+?)[ \t]*\n`)
 
-var postReg = regexp.MustCompile(`(?i)\s*(\d+)\s+([~+]?爆\d*|\d+)\s*(\d{1,2}/\d{1,2})?\s+(\S+)\s+(\S+)\s+\[live\]\s+(.*)`)
-
-func (c *PTTClient) GotoBoard(board string) (*[]pttcrawler.Post, error) {
+func (c *PTTClient) GotoBoard(board string) ([]consts.Post, error) {
 	c.Lock()
 	defer c.Unlock()
+	c.write([]byte("q"))
+	c.read(3 * time.Second)
 	c.write([]byte("s"))
-	c.read(5 * time.Second)
+	c.read(3 * time.Second)
 	for _, b := range board {
 		c.write([]byte(string(b)))
 	}
+	c.read(3 * time.Second)
 	c.write([]byte("\r"))
 	timer := time.NewTimer(1 * time.Second)
 	for {
@@ -152,33 +155,35 @@ func (c *PTTClient) GotoBoard(board string) (*[]pttcrawler.Post, error) {
 				break
 			}
 			if bytes.Contains(screen, []byte("【板主:")) && bytes.Contains(screen, []byte("看板《")) {
-				return pttcrawler.FetchLivePosts(board)
+				return c.FetchLivePosts()
 			}
 		}
 	}
 }
 
-//func (c *PTTClient) searchLivePost() (*[]Post, error) {
-//	posts := new([]Post)
-//	c.read(3 * time.Second)
-//	c.write([]byte("/[live]\r"))
-//	screen, _ := c.read(2 * time.Second)
-//	screen2, _ := c.read(1 * time.Second)
-//	screen = append(screen, screen2...)
-//
-//	matches := postReg.FindAllStringSubmatch(string(screen), -1)
-//	for _, match := range matches {
-//		*posts = append(*posts, Post{
-//			SearchId: match[1],
-//			Author:   match[4],
-//			Title:    match[6],
-//		})
-//	}
-//
-//	pttcrawler.FetchLivePosts()
-//
-//	return posts, nil
-//}
+func (c *PTTClient) FetchLivePosts() ([]consts.Post, error) {
+	c.read(3 * time.Second)
+	c.write([]byte("?"))
+	c.write([]byte("live"))
+	c.write([]byte("\r"))
+	screen, _ := c.read(2 * time.Second)
+
+	matches := postReg.FindAllStringSubmatch(string(screen), -1)
+	posts := make([]consts.Post, len(matches))
+	for i, match := range matches {
+		posts[len(posts)-i-1] = consts.Post{
+			Url:       "",
+			AID:       "",
+			SN:        match[1],
+			Title:     match[5],
+			Author:    match[4],
+			PushCount: match[2],
+			Date:      match[3],
+		}
+	}
+
+	return posts, nil
+}
 
 var (
 	// (?s) enables dot-all mode so (.*?) can capture across \n,
@@ -196,14 +201,11 @@ type Message struct {
 	Hash    string    `json:"hash"`
 }
 
-func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, error) {
+func (c *PTTClient) FetchPostMessagesByAID(aid string, msgHash string) ([]Message, error) {
 	c.Lock()
 	defer c.Unlock()
-
-	// Step 1: Navigate to the post
 	c.write(fmt.Appendf(nil, "#%s\r\r", aid))
 
-	// Drain ALL pending output to ensure clean state before `$`
 	for {
 		_, err := c.read(500 * time.Millisecond)
 		if err != nil {
@@ -211,10 +213,27 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 		}
 	}
 
-	// Step 2: Jump to the end of the post
+	return c.fetchPostMessages(msgHash)
+}
+
+func (c *PTTClient) FetchPostMessagesBySN(sn string, msgHash string) ([]Message, error) {
+	c.Lock()
+	defer c.Unlock()
+	c.write(fmt.Appendf(nil, "%s\r\r", sn))
+
+	for {
+		_, err := c.read(500 * time.Millisecond)
+		if err != nil {
+			break
+		}
+	}
+
+	return c.fetchPostMessages(msgHash)
+}
+
+func (c *PTTClient) fetchPostMessages(msgHash string) ([]Message, error) {
 	c.write([]byte("$"))
 
-	// Step 3: Read frames until we see "100%" (= end of post).
 	var screen []byte
 	for range 30 {
 		tmp, err := c.read(1 * time.Second)
@@ -238,7 +257,7 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 	screen = cleanData(screen)
 
 	matches := msgReg.FindAllStringSubmatch(string(screen), -1)
-	messages := new([]Message)
+	messages := []Message{}
 	seen := make(map[string]bool)
 
 	for i := len(matches) - 1; i >= 0; i-- {
@@ -264,15 +283,15 @@ func (c *PTTClient) FetchPostMessages(aid string, msgHash string) (*[]Message, e
 			t = time.Now()
 		}
 
-		*messages = append(*messages, Message{
+		messages = append(messages, Message{
 			Time:    t,
 			Content: content,
 			Author:  matches[i][2],
 			Hash:    hash,
 		})
 	}
-	for i, j := 0, len(*messages)-1; i < j; i, j = i+1, j-1 {
-		(*messages)[i], (*messages)[j] = (*messages)[j], (*messages)[i]
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
 	}
 
 	return messages, nil

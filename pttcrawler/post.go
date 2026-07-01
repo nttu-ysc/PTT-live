@@ -1,6 +1,7 @@
 package pttcrawler
 
 import (
+	"ptt-live/consts"
 	"ptt-live/ptterror"
 	"ptt-live/utils"
 
@@ -9,18 +10,9 @@ import (
 
 const PttUrl = "https://www.ptt.cc/bbs/"
 
-type Post struct {
-	Url       string `json:"url"`
-	AID       string `json:"aid"`
-	Title     string `json:"title"`
-	Author    string `json:"author"`
-	PushCount string `json:"push_count"`
-	Date      string `json:"date"`
-}
-
-func FetchLivePosts(board string) (posts *[]Post, err error) {
+func FetchLivePosts(board string) (posts *[]consts.Post, err error) {
 	url := PttUrl + board + "/search?q=live"
-	posts = new([]Post)
+	posts = new([]consts.Post)
 
 	c := colly.NewCollector()
 	c.Limit(&colly.LimitRule{DomainGlob: "*", Parallelism: 1})
@@ -29,7 +21,7 @@ func FetchLivePosts(board string) (posts *[]Post, err error) {
 	})
 
 	c.OnHTML(`.r-list-container > .r-ent`, func(e *colly.HTMLElement) {
-		post := new(Post)
+		post := new(consts.Post)
 		// 推文數
 		post.PushCount = e.DOM.Find(`div.nrec > span`).Text()
 		// 標題
