@@ -162,11 +162,10 @@ func (c *PTTClient) GotoBoard(board string) ([]consts.Post, error) {
 }
 
 func (c *PTTClient) FetchLivePosts() ([]consts.Post, error) {
-	c.read(3 * time.Second)
+	c.read(100 * time.Millisecond)
 	c.write([]byte("?"))
-	c.write([]byte("live"))
-	c.write([]byte("\r"))
-	screen, _ := c.read(2 * time.Second)
+	c.write([]byte("live\r"))
+	screen, _ := c.read(3 * time.Second)
 
 	matches := postReg.FindAllStringSubmatch(string(screen), -1)
 	posts := make([]consts.Post, len(matches))
